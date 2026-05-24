@@ -1,0 +1,199 @@
+🔲 Figma AI Prompt — Wireframes + Clickable Prototype
+Harsh Phalke Films & Photography
+
+
+Create a complete low-fidelity wireframe set AND a fully clickable, interactive prototype for the "Harsh Phalke — Photo & Films" website. All buttons, navigation links, toggles, checkboxes, accordions, and form elements must be wired and functional within Figma prototype mode. Follow every interaction detail below.
+
+
+📐 WIREFRAME SETUP
+Frame Sizes:
+
+Desktop: 1440 × 900px — one frame per section (8 frames)
+Mobile: 390 × 844px — one frame per section (8 frames)
+Total: 16 wireframe frames
+
+Wireframe Style:
+
+Grey scale only — #F5F5F5 background · #E0E0E0 cards · #BDBDBD borders · #333333 text
+Use rectangles as image placeholders with an X through them
+All text as real copy (not lorem ipsum) — use actual section headings and labels from the PRD
+Annotate each section with a small label tag showing the section number and name
+
+
+🖱️ ALL CLICKABLE INTERACTIONS — WIRE EVERY ONE OF THESE
+
+NAVBAR
+
+Logo → scrolls to Hero (Section 1)
+"Home" link → scrolls to Hero
+"About" link → scrolls to About Us (Section 2)
+"Services" link → scrolls to Services (Section 3)
+"Portfolio" link → opens a placeholder Portfolio overlay/modal
+"Contact" link → scrolls to Contact (Section 7)
+Mobile: Hamburger menu icon → opens slide-in drawer with all nav links
+Each drawer link → closes drawer + scrolls to correct section
+
+
+SECTION 1 — HERO
+
+"Book Now" button → scrolls to Booking Form (Section 6)
+"Explore Services" button → scrolls to Services (Section 3)
+Scroll arrow at bottom → scrolls to About Us (Section 2)
+
+
+SECTION 2 — ABOUT US
+
+Three badge cards (Approach / Vision / Quality) → each card click → expands into a modal overlay with more detail text
+"See Our Work" CTA (if present) → scrolls to Services (Section 3)
+
+
+SECTION 3A — EVENT SHOOT SELECTOR
+
+Each event card checkbox → toggles selected state ON/OFF
+
+ON state: card gets gold border highlight, checkbox filled
+OFF state: card returns to default grey
+
+
+Full Day / Half Day toggle on each card → switches pricing label shown on card
+
+Full Day selected: show full day price
+Half Day selected: show half day price
+
+
+Selecting any event → automatically updates the Live Bill in Section 4
+
+
+SECTION 3B — ALBUM PACKAGES
+
+8×24 card → click to select (highlighted state)
+12×36 card → click to select (highlighted state)
+Only one album selectable at a time (radio button behavior)
+Pages input field → typing a number → updates album total shown below the input in real time
+
+
+SECTION 3C — ADD-ON SERVICES
+
+Each add-on service card toggle → ON/OFF
+
+ON: card highlighted, price added to bill total
+OFF: price removed from bill total
+
+
+Live running total at bottom of add-ons section → updates as toggles change
+
+
+SECTION 4 — BILL GENERATOR
+
+Customer Name field → typing updates the name shown on the bill card
+Itemised list → dynamically shows all selected services from Section 3
+"Generate Bill" button → triggers a transition to a clean printable bill card view (new frame overlay)
+
+Printable bill shows: customer name · date · all selected items · total · studio logo · "Thank you" line
+
+
+"Print / Download" button → shows a toast notification: "Bill ready to print!"
+"Back / Edit" button on bill overlay → returns to bill generator
+
+
+SECTION 5 — UPI PAYMENT
+
+PhonePe QR card → click → zooms into full-screen QR overlay (easier to scan)
+Full-screen QR overlay → tap anywhere outside → closes overlay
+"Send Screenshot on WhatsApp" button → opens WhatsApp link:
+https://wa.me/917720049725?text=Hi%20Harsh%2C%20I%20have%20made%20the%20payment.%20Please%20find%20the%20screenshot%20attached.
+After clicking WhatsApp button → show confirmation toast: "Opening WhatsApp..."
+
+
+SECTION 6 — BOOKING FORM
+
+All fields → show active/focus state on click (gold border highlight)
+Event Type dropdown → opens dropdown with all event options from Section 3A
+Event Date field → opens date picker interaction
+Total Amount field → read-only, pre-filled from bill total, gold text
+"Confirm Booking" button →
+
+If all required fields filled → shows success overlay: "Booking Confirmed! We'll contact you on WhatsApp shortly." with a green checkmark and "Done" button
+If fields empty → shows inline validation: red border on empty fields + error message below
+
+
+Success overlay "Done" button → closes overlay, scrolls back to Hero
+"WhatsApp us directly" link → opens https://wa.me/917720049725
+
+
+SECTION 7 — CONTACT
+
+WhatsApp card → click → opens https://wa.me/917720049725?text=Hi%20Harsh%2C%20I%20want%20to%20enquire%20about%20a%20shoot.
+Phone card → click → triggers tel:+917720049725
+Instagram card → click → opens Instagram profile link for @HARSH_PHALKE_FILMS
+Instagram QR card → click → zooms to full-screen QR overlay
+Email row → click → triggers mailto:harshphalke05@gmail.com
+Full-screen QR overlay → click outside → closes
+
+
+SECTION 8 — TERMS & CONDITIONS
+
+Each accordion item → click heading row → expands body text below
+Click again → collapses
+Only one accordion item open at a time (accordion behavior)
+Gold chevron icon → rotates 90° when expanded, rotates back when collapsed
+
+
+FOOTER
+
+Logo → scrolls to Hero
+Instagram icon → opens @HARSH_PHALKE_FILMS
+WhatsApp icon → opens wa.me link
+Email text → triggers mailto link
+"Stories Today. Memories Forever." tagline → no interaction (decorative)
+
+
+📲 MOBILE-SPECIFIC INTERACTIONS
+
+Hamburger ☰ icon → opens full-height slide-in nav drawer from left
+Drawer overlay background → click → closes drawer
+All scroll interactions → work as smooth scroll within mobile frames
+QR overlays → full screen on mobile frames
+Form fields → show mobile keyboard placeholder state
+Booking success overlay → full screen on mobile
+
+
+🔗 PROTOTYPE FLOW SETUP IN FIGMA
+Set up these prototype connections:
+TriggerActionDestination"Book Now" btnOn ClickScroll to Section 6 frame"Explore Services" btnOn ClickScroll to Section 3 frameScroll arrowOn ClickScroll to Section 2 frameNav "About"On ClickScroll to Section 2 frameNav "Services"On ClickScroll to Section 3 frameNav "Contact"On ClickScroll to Section 7 frame"Generate Bill" btnOn ClickOpen Bill Overlay frameBill "Back" btnOn ClickClose overlay"Confirm Booking" btnOn ClickOpen Booking Success overlaySuccess "Done" btnOn ClickClose overlay + scroll to Section 1WhatsApp buttonsOn ClickOpen link componentAccordion itemsOn ClickToggle expanded/collapsed variantAdd-on togglesOn ClickToggle ON/OFF card variantEvent card checkboxesOn ClickToggle selected/unselected variantQR cardsOn ClickOpen full-screen QR overlayQR overlay bgOn ClickClose overlayHamburger menuOn ClickOpen nav drawer overlayDrawer bgOn ClickClose drawer
+
+🧩 COMPONENT VARIANTS TO CREATE
+Create these as Figma components with variants so prototype interactions work cleanly:
+
+Button — variants: Default / Hover / Pressed (Gold Filled & Gold Outlined)
+Event Card — variants: Unselected / Selected (gold border)
+Full/Half Day Toggle — variants: Full Day Active / Half Day Active
+Add-on Card — variants: OFF / ON (gold border + highlighted price)
+Album Card — variants: Unselected / Selected
+Accordion Item — variants: Collapsed / Expanded (chevron rotated)
+Nav Link — variants: Default / Active / Hover
+Input Field — variants: Empty / Focus / Filled / Error
+Toast Notification — variants: Success / Info
+Modal / Overlay — variants: Bill Preview / Booking Success / QR Fullscreen / Nav Drawer
+
+
+✅ ANNOTATION LAYER
+Add a separate annotation layer (locked, non-printable) on every frame:
+
+Pink label boxes on each interactive element with short notes:
+
+"Scrolls to Section 6"
+"Toggles ON/OFF — updates bill total"
+"Opens WhatsApp with pre-filled message"
+"Accordion — one open at a time"
+etc.
+
+
+
+
+📎 REFERENCE IMAGES PROVIDED
+
+Black logo — use in all navbar/footer wireframe placeholders
+Photography quotation poster — reference for layout/hierarchy
+PhonePe QR (black) — Section 5
+Instagram QR (white, @HARSH_PHALKE_FILMS) — Section 7

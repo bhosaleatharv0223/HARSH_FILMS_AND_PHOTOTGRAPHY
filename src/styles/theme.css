@@ -1,0 +1,706 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  --background: #0A0A0A;
+  --foreground: #F5F0E8;
+  --card: #1E1E1E;
+  --card-foreground: #F5F0E8;
+  --popover: #1E1E1E;
+  --popover-foreground: #F5F0E8;
+  --primary: #C9A84C;
+  --primary-foreground: #0A0A0A;
+  --secondary: #1E1E1E;
+  --secondary-foreground: #F5F0E8;
+  --muted: #1E1E1E;
+  --muted-foreground: #888888;
+  --accent: #C9A84C;
+  --accent-foreground: #0A0A0A;
+  --destructive: #d4183d;
+  --destructive-foreground: #ffffff;
+  --border: rgba(201, 168, 76, 0.2);
+  --input: transparent;
+  --input-background: #1E1E1E;
+  --switch-background: #cbced4;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: #C9A84C;
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: #030213;
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+
+  /* Custom brand colors */
+  --gold: #C9A84C;
+  --cream: #F5F0E8;
+  --dark-bg: #0A0A0A;
+  --dark-card: #1E1E1E;
+  --light-grey: #CCCCCC;
+
+  /* Fonts */
+  --font-display: 'Playfair Display', serif;
+  --font-body: 'DM Sans', sans-serif;
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.439 0 0);
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: oklch(0.439 0 0);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  .added-badge {
+    font-size: 10px;
+    color: #C9A84C;
+    border: 1px solid #C9A84C;
+    background: rgba(201, 168, 76, 0.12);
+    padding: 3px 10px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-top: 4px;
+  }
+
+  /* ── UPI SECTION ── */
+  .upi-section {
+    padding: 80px 20px;
+    text-align: center;
+    background: #0A0A0A;
+  }
+
+  .upi-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 38px;
+    color: #ffffff;
+    margin-bottom: 48px;
+  }
+
+  .upi-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    background: #1A1A1A;
+    border: 1px solid #2D2D2D;
+    border-radius: 16px;
+    padding: 48px 40px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* ── QR IMAGE ── */
+  .qr-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+  }
+
+  .qr-image {
+    width: 240px;
+    height: 240px;
+    object-fit: contain;
+    border-radius: 12px;
+    border: 2px solid #C9A84C;
+    padding: 8px;
+    background: #fff;
+  }
+
+  .qr-name {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: #ffffff;
+    margin: 0;
+  }
+
+  .qr-sub {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: #888888;
+    margin: 0;
+  }
+
+  /* ── DOWNLOAD BUTTON ── */
+  .btn-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 1px solid #C9A84C;
+    color: #C9A84C;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 6px;
+    text-decoration: none;
+    margin-top: 4px;
+    transition: all 0.2s ease;
+  }
+
+  .btn-download:hover {
+    background: #C9A84C;
+    color: #000000;
+  }
+
+  /* ── DIVIDER ── */
+  .upi-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      #C9A84C,
+      transparent
+    );
+    margin: 36px 0;
+  }
+
+  /* ── WHATSAPP BUTTON ── */
+  .btn-whatsapp {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: #25D366;
+    color: #ffffff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 16px 32px;
+    border-radius: 50px;
+    text-decoration: none;
+    width: 100%;
+    transition: background 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 4px 20px rgba(37, 211, 102, 0.25);
+  }
+
+  .btn-whatsapp:hover {
+    background: #1ebe5d;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 28px rgba(37, 211, 102, 0.35);
+  }
+
+  .btn-whatsapp:active {
+    transform: translateY(0px);
+  }
+
+  /* ── PREMIUM INVOICE MODAL STYLES ── */
+  .invoice-modal {
+    background: #0F0F0F;
+    border: 1px solid #C9A84C;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 620px;
+    padding: 0;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.8), 0 0 40px rgba(201,168,76,0.08);
+    overflow: hidden;
+  }
+
+  /* ── HEADER BAND ── */
+  .invoice-header {
+    background: #0A0A0A;
+    padding: 32px 40px;
+    border-bottom: 1px solid #2D2D2D;
+  }
+
+  .invoice-header-content {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .invoice-header-left {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .invoice-brand-name {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 20px;
+    color: #ffffff;
+    line-height: 1.2;
+    margin-bottom: 2px;
+  }
+
+  .invoice-brand-sub {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 10px;
+    color: #C9A84C;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+  }
+
+  .invoice-location {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    color: #888888;
+  }
+
+  .invoice-header-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-self: center;
+  }
+
+  .invoice-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: 32px;
+    color: #ffffff;
+    margin-bottom: 8px;
+  }
+
+  .invoice-title-line {
+    width: 60px;
+    height: 1px;
+    background: #C9A84C;
+  }
+
+  .invoice-header-right {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    justify-self: end;
+    text-align: right;
+  }
+
+  .invoice-meta-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .invoice-meta-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 9px;
+    color: #888888;
+  }
+
+  .invoice-meta-value {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    color: #C9A84C;
+  }
+
+  .invoice-meta-date {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    color: #ffffff;
+  }
+
+  .invoice-meta-customer {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    color: #ffffff;
+  }
+
+  /* ── GOLD ACCENT STRIP ── */
+  .invoice-gold-strip {
+    height: 3px;
+    background: linear-gradient(to right, transparent, #C9A84C, #E8C96A, #C9A84C, transparent);
+    width: 100%;
+  }
+
+  /* ── BILL BODY ── */
+  .invoice-body {
+    padding: 32px 40px;
+    background: #0F0F0F;
+  }
+
+  .invoice-category {
+    margin-bottom: 20px;
+  }
+
+  .invoice-category:last-child {
+    margin-bottom: 0;
+  }
+
+  .invoice-category-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #1E1E1E;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+  }
+
+  .invoice-category-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .invoice-category-icon {
+    font-size: 12px;
+  }
+
+  .invoice-category-name {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    color: #C9A84C;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .invoice-line-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px dotted #1E1E1E;
+  }
+
+  .invoice-line-item:last-child {
+    border-bottom: none;
+  }
+
+  .invoice-service-name {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: #E0E0E0;
+  }
+
+  .invoice-duration {
+    color: #888888;
+    font-size: 12px;
+  }
+
+  .invoice-service-price {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    color: #ffffff;
+  }
+
+  .invoice-no-services {
+    font-family: 'DM Sans', sans-serif;
+    font-style: italic;
+    font-size: 13px;
+    color: #555555;
+    text-align: center;
+    padding: 40px 0;
+  }
+
+  /* ── SUBTOTAL AREA ── */
+  .invoice-subtotal {
+    background: #141414;
+    border-top: 1px solid #2D2D2D;
+    padding: 20px 40px;
+  }
+
+  .invoice-subtotal-row {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: #888888;
+  }
+
+  /* ── TOTAL BAND ── */
+  .invoice-total-band {
+    background: linear-gradient(135deg, #1A1500, rgba(201, 168, 76, 0.13));
+    border-top: 2px solid #C9A84C;
+    border-bottom: 2px solid #C9A84C;
+    padding: 20px 40px;
+  }
+
+  .invoice-total-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .invoice-total-label {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 900;
+    font-size: 14px;
+    color: #ffffff;
+    letter-spacing: 2px;
+  }
+
+  .invoice-total-amount {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 28px;
+    color: #C9A84C;
+  }
+
+  /* ── THANK YOU ROW ── */
+  .invoice-thank-you {
+    padding: 16px 40px;
+    text-align: center;
+  }
+
+  .invoice-thank-you-text {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: #888888;
+    margin-bottom: 8px;
+  }
+
+  .invoice-stars {
+    color: #C9A84C;
+    font-size: 10px;
+    letter-spacing: 4px;
+  }
+
+  /* ── TERMS STRIP ── */
+  .invoice-terms {
+    background: #080808;
+    padding: 14px 40px;
+    border-top: 1px solid #1E1E1E;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 8px;
+    color: #555555;
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  /* ── FOOTER BUTTONS ── */
+  .invoice-footer {
+    padding: 24px 40px;
+    background: #0A0A0A;
+    border-top: 1px solid #2D2D2D;
+    display: flex;
+    gap: 16px;
+  }
+
+  .invoice-btn-back {
+    flex: 1;
+    background: transparent;
+    border: 1px solid #2D2D2D;
+    color: #888888;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    padding: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .invoice-btn-back:hover {
+    border-color: #C9A84C;
+    color: #C9A84C;
+  }
+
+  .invoice-btn-download {
+    flex: 2;
+    background: #C9A84C;
+    color: #000000;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .invoice-btn-download:hover:not(:disabled) {
+    background: #E8C96A;
+  }
+
+  .invoice-btn-download:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  /* ── RESPONSIVE DESIGN ── */
+  @media (max-width: 768px) {
+    .invoice-modal {
+      max-width: 95vw;
+      margin: 20px;
+    }
+
+    .invoice-header {
+      padding: 24px 20px;
+    }
+
+    .invoice-header-content {
+      grid-template-columns: 1fr;
+      gap: 16px;
+      text-align: center;
+    }
+
+    .invoice-header-right {
+      justify-self: center;
+      text-align: center;
+    }
+
+    .invoice-body {
+      padding: 24px 20px;
+    }
+
+    .invoice-subtotal,
+    .invoice-total-band,
+    .invoice-thank-you,
+    .invoice-terms,
+    .invoice-footer {
+      padding-left: 20px;
+      padding-right: 20px;
+    }
+
+    .invoice-footer {
+      flex-direction: column;
+    }
+
+    .invoice-btn-back,
+    .invoice-btn-download {
+      flex: none;
+    }
+  }
+
+  /**
+  * Default typography styles for HTML elements (h1-h4, p, label, button, input).
+  * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
+  */
+
+  html {
+    font-size: var(--font-size);
+  }
+
+  h1 {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h2 {
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h3 {
+    font-size: var(--text-lg);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h4 {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  label {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  button {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  input {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-normal);
+    line-height: 1.5;
+  }
+}
