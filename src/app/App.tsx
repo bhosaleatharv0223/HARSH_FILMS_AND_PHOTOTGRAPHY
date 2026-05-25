@@ -24,11 +24,24 @@ import portfolio8 from '../imports/portfolio_images/MHPL7323.jpg.jpeg';
 export default function App() {
   const [splashVisible, setSplashVisible] = useState(true);
   const [siteLoaded, setSiteLoaded] = useState(false);
-  const [selectedEvents, setSelectedEvents] = useState<Set<string>>(new Set());
-  const [eventDurations, setEventDurations] = useState<Map<string, 'full' | 'half'>>(new Map());
+  const [selectedEvent, setSelectedEvent] = useState<string>(''); // Single event selection
+  const [addons, setAddons] = useState<Set<string>>(new Set());
+  const [addonDurations, setAddonDurations] = useState<Map<string, 'full' | 'half'>>(new Map());
+  const [addonQuantities, setAddonQuantities] = useState<Map<string, number>>(new Map());
   const [albumType, setAlbumType] = useState<'small' | 'large' | 'none'>('none');
   const [albumPages, setAlbumPages] = useState(20);
-  const [addons, setAddons] = useState<Set<string>>(new Set());
+  const [mobileCinematography, setMobileCinematography] = useState<Set<string>>(new Set());
+  const [billItems, setBillItems] = useState<Array<{
+    id: string;
+    eventName: string;
+    addons: Array<{
+      id: string;
+      name: string;
+      duration: 'full' | 'half';
+      quantity: number;
+      price: number;
+    }>;
+  }>>([]);
   const [customerName, setCustomerName] = useState('');
   const [expandedTerm, setExpandedTerm] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -169,36 +182,57 @@ export default function App() {
 
   const eventCategories = {
     priority: [
-      { id: 'wedding', name: 'Wedding Photography', price: 25000 },
-      { id: 'prewedding', name: 'Pre-Wedding Shoot', price: 18000 },
-      { id: 'engagement', name: 'Engagement Shoot', price: 15000 },
-      { id: 'haldi', name: 'Haldi/Mehendi', price: 12000 },
-      { id: 'destination', name: 'Destination Wedding', price: 50000 }
+      { id: 'wedding', name: 'Wedding Photography' },
+      { id: 'prewedding', name: 'Pre-Wedding Shoot' },
+      { id: 'engagement', name: 'Engagement Shoot' },
+      { id: 'haldi', name: 'Haldi/Mehendi' },
+      { id: 'destination', name: 'Destination Wedding' }
     ],
     other: [
-      { id: 'couple', name: 'Couple', price: 8000 },
-      { id: 'fashion', name: 'Fashion', price: 10000 },
-      { id: 'cinematic', name: 'Cinematic', price: 15000 },
-      { id: 'nature', name: 'Nature & Travel', price: 12000 },
-      { id: 'studio', name: 'Studio', price: 7000 },
-      { id: 'social', name: 'Social Media', price: 6000 },
-      { id: 'traditional', name: 'Traditional & Cultural', price: 9000 },
-      { id: 'adventure', name: 'Adventure', price: 11000 },
-      { id: 'beach', name: 'Beach', price: 10000 },
-      { id: 'fort', name: 'Fort & Heritage', price: 12000 }
+      { id: 'couple', name: 'Couple' },
+      { id: 'fashion', name: 'Fashion' },
+      { id: 'cinematic', name: 'Cinematic' },
+      { id: 'nature', name: 'Nature & Travel' },
+      { id: 'studio', name: 'Studio' },
+      { id: 'social', name: 'Social Media' },
+      { id: 'traditional', name: 'Traditional & Cultural' },
+      { id: 'adventure', name: 'Adventure' },
+      { id: 'beach', name: 'Beach' },
+      { id: 'fort', name: 'Fort & Heritage' }
     ]
   };
 
+  // Add-on services with pricing structure
   const addonServices = [
-    { id: 'trad-photo', name: 'Traditional Photographer', price: 6000 },
-    { id: 'candid-photo', name: 'Candid Photographer', price: 8000 },
-    { id: 'trad-video', name: 'Traditional Videographer', price: 5000 },
-    { id: 'cine-shoot', name: 'Cinematic Shoot', price: 10000 },
-    { id: 'drone', name: 'Drone Shoot', price: 8000 },
-    { id: 'screen', name: 'Screen', price: 12000 },
-    { id: 'album-100', name: 'Album 100 Photos', price: 10000 },
-    { id: 'trad-edit', name: 'Traditional Video Edit', price: 2000 },
-    { id: 'cine-ht', name: 'Cinematic Shoot H+T', price: 6000 }
+    { id: 'trad-photo', name: 'Traditional Photographer', fullDay: 15000, halfDay: 6000 },
+    { id: 'candid-photo', name: 'Candid Photographer', fullDay: 15000, halfDay: 8000 },
+    { id: 'trad-video', name: 'Traditional Videographer', fullDay: 10000, halfDay: 5000 },
+    { id: 'cine-shoot', name: 'Cinematic Shoot', fullDay: 15000, halfDay: 10000 },
+    { id: 'drone', name: 'Drone Shoot', fullDay: 8000, halfDay: 8000 },
+    { id: 'screen', name: 'Screen', fullDay: 12000, halfDay: 12000 },
+    { id: 'album-100', name: 'Album 100 Photos', fullDay: 10000, halfDay: 7000 },
+    { id: 'trad-edit', name: 'Traditional Video Edit', fullDay: 3000, halfDay: 2000 },
+    { id: 'cine-edit', name: 'Cinematic Video Edit (Teaser+Highlight)', fullDay: 6000, halfDay: 6000 },
+    { id: 'spot-editor', name: 'Spot Editor', fullDay: 8000, halfDay: 8000, noOptions: true }
+  ];
+
+  // Mobile Cinematography services
+  const mobileCinematographyServices = [
+    { id: 'cine-video', name: 'Cinematic video', price: 2000 },
+    { id: 'wedding-shoot-full', name: 'Wedding shoot full day', price: 5000 },
+    { id: 'wedding-one-event', name: 'Wedding one event', price: 1500 },
+    { id: 'political-reel', name: 'Political reel', price: 2000 },
+    { id: 'birthday-video', name: 'Birthday video', price: 2000 },
+    { id: 'engagement-reel', name: 'Engagement reel', price: 2000 },
+    { id: 'haldi-reel', name: 'Haldi reel', price: 2000 },
+    { id: 'car-delivery', name: 'Car delivery', price: 1500 },
+    { id: 'baby-entry-shoot', name: 'Baby entry shoot', price: 1500 },
+    { id: 'baby-birthday-shoot', name: 'Baby birthday shoot', price: 2000 },
+    { id: 'vastu-shanti', name: 'Vastu shanti', price: 1500 },
+    { id: 'jagran-ghondhal', name: 'Jagran ghondhal', price: 1500 },
+    { id: 'new-shop-opening', name: 'New shop opening', price: 1500 },
+    { id: 'mahendi', name: 'Mahendi', price: 1500 },
+    { id: 'ghana-bangdya', name: 'Ghana bangdya', price: 1500 }
   ];
 
   const aboutDetails = [
@@ -268,13 +302,17 @@ export default function App() {
   const calculateTotal = () => {
     let total = 0;
 
-    // Events
-    selectedEvents.forEach(eventId => {
-      const event = [...eventCategories.priority, ...eventCategories.other].find(e => e.id === eventId);
-      if (event) {
-        const duration = eventDurations.get(eventId) || 'full';
-        total += duration === 'full' ? event.price : event.price * 0.6;
-      }
+    // Calculate total from bill items
+    billItems.forEach(item => {
+      item.addons.forEach(addon => {
+        total += addon.price;
+      });
+    });
+
+    // Mobile Cinematography services
+    mobileCinematography.forEach(serviceId => {
+      const service = mobileCinematographyServices.find(s => s.id === serviceId);
+      if (service) total += service.price;
     });
 
     // Album
@@ -284,13 +322,57 @@ export default function App() {
       total += (albumPages * albumPricePerPage) + albumCover;
     }
 
-    // Addons
-    addons.forEach(addonId => {
-      const addon = addonServices.find(a => a.id === addonId);
-      if (addon) total += addon.price;
-    });
-
     return total;
+  };
+
+  // Function to add selected event and addons to bill
+  const addSelectedEventToBill = () => {
+    if (!selectedEvent) {
+      toast.error('Please select an event first');
+      return;
+    }
+
+    if (addons.size === 0) {
+      toast.error('Please select at least one add-on service');
+      return;
+    }
+
+    const selectedEventData = [...eventCategories.priority, ...eventCategories.other].find(e => e.id === selectedEvent);
+    if (!selectedEventData) return;
+
+    const selectedAddons = Array.from(addons).map(addonId => {
+      const addon = addonServices.find(a => a.id === addonId);
+      if (!addon) return null;
+      
+      const duration = addonDurations.get(addonId) || 'full';
+      const quantity = addonQuantities.get(addonId) || 1;
+      const basePrice = duration === 'full' ? addon.fullDay : addon.halfDay;
+      const totalPrice = basePrice * quantity;
+      
+      return {
+        id: addonId,
+        name: addon.name,
+        duration,
+        quantity,
+        price: totalPrice
+      };
+    }).filter((addon): addon is NonNullable<typeof addon> => addon !== null);
+
+    const newBillItem = {
+      id: Date.now().toString(),
+      eventName: selectedEventData.name,
+      addons: selectedAddons
+    };
+
+    setBillItems(prev => [...prev, newBillItem]);
+    
+    // Reset selections
+    setSelectedEvent('');
+    setAddons(new Set());
+    setAddonDurations(new Map());
+    setAddonQuantities(new Map());
+    
+    toast.success('Event added to bill successfully!');
   };
 
   const scrollToSection = (id: string) => {
@@ -305,7 +387,6 @@ export default function App() {
     const errors = new Set<string>();
     if (!formData.fullName.trim()) errors.add('fullName');
     if (!formData.phone.trim()) errors.add('phone');
-    if (!formData.eventType) errors.add('eventType');
     if (!formData.eventDate) errors.add('eventDate');
     if (!formData.location.trim()) errors.add('location');
     return errors;
@@ -323,22 +404,25 @@ export default function App() {
     // Get selected services for the message
     const selectedServicesList = [];
 
-    // Add selected events
-    selectedEvents.forEach(eventId => {
-      const event = [...eventCategories.priority, ...eventCategories.other].find(e => e.id === eventId);
-      if (event) {
-        const duration = eventDurations.get(eventId) || 'full';
-        selectedServicesList.push(`${event.name} (${duration === 'full' ? 'Full Day' : 'Half Day'})`);
-      }
+    // Add bill items
+    billItems.forEach((item, index) => {
+      selectedServicesList.push(`${index + 1}. ${item.eventName}`);
+      item.addons.forEach(addon => {
+        const quantityText = addon.quantity > 1 ? ` x${addon.quantity}` : '';
+        selectedServicesList.push(`   • ${addon.name} (${addon.duration === 'full' ? 'Full Day' : 'Half Day'})${quantityText} - ₹${addon.price.toLocaleString()}`);
+      });
     });
 
-    // Add selected addons
-    addons.forEach(addonId => {
-      const addon = addonServices.find(a => a.id === addonId);
-      if (addon) {
-        selectedServicesList.push(addon.name);
-      }
-    });
+    // Add mobile cinematography services
+    if (mobileCinematography.size > 0) {
+      selectedServicesList.push('Mobile Cinematography:');
+      mobileCinematography.forEach(serviceId => {
+        const service = mobileCinematographyServices.find(s => s.id === serviceId);
+        if (service) {
+          selectedServicesList.push(`   • ${service.name} - ₹${service.price.toLocaleString()}`);
+        }
+      });
+    }
 
     // Add album selection
     if (albumType !== 'none') {
@@ -358,7 +442,7 @@ export default function App() {
 💰 *Total Amount:* ₹${calculateTotal().toLocaleString()}
 
 📋 *Selected Services:*
-${selectedServicesList.map(service => `• ${service}`).join('\n')}
+${selectedServicesList.map(service => `${service}`).join('\n')}
 
 📝 *Special Notes:* ${formData.message || 'None'}
 
@@ -471,7 +555,6 @@ ${selectedServicesList.map(service => `• ${service}`).join('\n')}
     const errors = new Set<string>();
     if (!formData.fullName.trim()) errors.add('fullName');
     if (!formData.phone.trim() || formData.phone.length < 10) errors.add('phone');
-    if (!formData.eventType) errors.add('eventType');
     if (!formData.eventDate) errors.add('eventDate');
     if (!formData.location.trim()) errors.add('location');
 
@@ -495,8 +578,6 @@ ${selectedServicesList.map(service => `• ${service}`).join('\n')}
     if (!formData.fullName?.trim()) errors.fullName = 'Full name is required';
     if (!formData.phone?.trim() || formData.phone.length < 10)
       errors.phone = 'Valid 10-digit phone required';
-    if (!formData.eventType)
-      errors.eventType = 'Please select event type';
     if (!formData.eventDate)
       errors.eventDate = 'Event date is required';
     if (!formData.location?.trim())
@@ -605,20 +686,19 @@ ${billUrl}
     scrollToSection('services');
   };
 
-  // Auto-populate booking form when events are selected
+  // Auto-populate booking form when bill items are updated
   useEffect(() => {
-    if (selectedEvents.size > 0) {
-      // Get the first selected event to populate the event type
-      const firstEventId = Array.from(selectedEvents)[0];
-      const firstEvent = [...eventCategories.priority, ...eventCategories.other].find(e => e.id === firstEventId);
+    if (billItems.length > 0) {
+      // Get the first event from bill items to populate the event type
+      const firstEvent = billItems[0];
       if (firstEvent) {
-        setFormData(prev => ({ ...prev, eventType: firstEvent.name }));
+        setFormData(prev => ({ ...prev, eventType: firstEvent.eventName }));
       }
     } else {
-      // Clear event type if no events selected
+      // Clear event type if no bill items
       setFormData(prev => ({ ...prev, eventType: '' }));
     }
-  }, [selectedEvents]);
+  }, [billItems]);
 
   // Modal scroll behavior effects
   useEffect(() => {
@@ -845,92 +925,249 @@ ${billUrl}
 
           {/* Event Selector */}
           <div className="mb-16">
-            <h3 className="text-2xl font-bold mb-6 text-[#C9A84C]">Select Your Event</h3>
+            <h3 className="text-2xl font-bold mb-6 text-[#C9A84C]">Select Your Event (Choose One)</h3>
             <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-              {eventCategories.priority.map((event) => (
+              {eventCategories.priority.map((event, index) => (
                 <motion.div
                   key={event.id}
-                  whileHover={{ scale: 1.03 }}
+                  whileHover={{ scale: selectedEvent && selectedEvent !== event.id ? 1 : 1.03 }}
                   onClick={() => {
-                    const newSelected = new Set(selectedEvents);
-                    if (newSelected.has(event.id)) {
-                      newSelected.delete(event.id);
-                    } else {
-                      newSelected.add(event.id);
+                    if (!selectedEvent || selectedEvent === event.id) {
+                      setSelectedEvent(selectedEvent === event.id ? '' : event.id);
                     }
-                    setSelectedEvents(newSelected);
                   }}
-                  className={`bg-[#1E1E1E] p-6 rounded-lg cursor-pointer border-2 transition-all ${selectedEvents.has(event.id) ? 'border-[#C9A84C] shadow-lg shadow-[#C9A84C]/20' : 'border-transparent'
-                    }`}
+                  className={`bg-[#1E1E1E] p-6 rounded-lg cursor-pointer border-2 transition-all ${
+                    selectedEvent === event.id 
+                      ? 'border-[#C9A84C] shadow-lg shadow-[#C9A84C]/20' 
+                      : selectedEvent && selectedEvent !== event.id
+                        ? 'border-transparent opacity-50 cursor-not-allowed'
+                        : 'border-transparent'
+                  }`}
                 >
                   <div className="flex justify-between items-start mb-3">
                     <div className="text-2xl">💍</div>
-                    {selectedEvents.has(event.id) && <Check className="w-5 h-5 text-[#C9A84C]" />}
+                    {selectedEvent === event.id && <Check className="w-5 h-5 text-[#C9A84C]" />}
                   </div>
                   <h4 className="font-bold mb-2 text-[#F5F0E8]">{event.name}</h4>
-                  {selectedEvents.has(event.id) && (
-                    <span className="added-badge">Added to Bill</span>
-                  )}
-                  {selectedEvents.has(event.id) && (
-                    <div className="flex gap-2 mt-3">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const newDurations = new Map(eventDurations);
-                          newDurations.set(event.id, 'full');
-                          setEventDurations(newDurations);
-                        }}
-                        className={`flex-1 py-1 px-2 text-xs rounded ${(eventDurations.get(event.id) || 'full') === 'full'
-                          ? 'bg-[#C9A84C] text-[#0A0A0A]'
-                          : 'bg-[#0A0A0A] text-[#888888]'
-                          }`}
-                      >
-                        Full Day
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const newDurations = new Map(eventDurations);
-                          newDurations.set(event.id, 'half');
-                          setEventDurations(newDurations);
-                        }}
-                        className={`flex-1 py-1 px-2 text-xs rounded ${eventDurations.get(event.id) === 'half'
-                          ? 'bg-[#C9A84C] text-[#0A0A0A]'
-                          : 'bg-[#0A0A0A] text-[#888888]'
-                          }`}
-                      >
-                        Half Day
-                      </button>
-                    </div>
+                  {selectedEvent === event.id && (
+                    <span className="added-badge">Selected</span>
                   )}
                 </motion.div>
               ))}
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              {eventCategories.other.map((event) => (
+              {eventCategories.other.map((event, index) => (
                 <motion.div
                   key={event.id}
-                  whileHover={{ scale: 1.03 }}
+                  whileHover={{ scale: selectedEvent && selectedEvent !== event.id ? 1 : 1.03 }}
                   onClick={() => {
-                    const newSelected = new Set(selectedEvents);
-                    if (newSelected.has(event.id)) {
-                      newSelected.delete(event.id);
-                    } else {
-                      newSelected.add(event.id);
+                    if (!selectedEvent || selectedEvent === event.id) {
+                      setSelectedEvent(selectedEvent === event.id ? '' : event.id);
                     }
-                    setSelectedEvents(newSelected);
                   }}
-                  className={`bg-[#1E1E1E] p-4 rounded-lg cursor-pointer border-2 transition-all ${selectedEvents.has(event.id) ? 'border-[#C9A84C]' : 'border-transparent'
-                    }`}
+                  className={`bg-[#1E1E1E] p-4 rounded-lg cursor-pointer border-2 transition-all ${
+                    selectedEvent === event.id 
+                      ? 'border-[#C9A84C]' 
+                      : selectedEvent && selectedEvent !== event.id
+                        ? 'border-transparent opacity-50 cursor-not-allowed'
+                        : 'border-transparent'
+                  }`}
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div className="text-xl">📸</div>
-                    {selectedEvents.has(event.id) && <Check className="w-4 h-4 text-[#C9A84C]" />}
+                    {selectedEvent === event.id && <Check className="w-4 h-4 text-[#C9A84C]" />}
                   </div>
                   <h4 className="text-sm font-bold mb-1 text-[#F5F0E8]">{event.name}</h4>
-                  {selectedEvents.has(event.id) && (
-                    <span className="added-badge">Added to Bill</span>
+                  {selectedEvent === event.id && (
+                    <span className="added-badge">Selected</span>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          {/* Add-on Services */}
+          <div className="mb-16">
+            <h3 className="text-2xl font-bold mb-6 text-[#C9A84C]">Add-on Services</h3>
+            <div className="grid md:grid-cols-3 gap-4">
+              {addonServices.map((addon, index) => (
+                <motion.div
+                  key={addon.id}
+                  whileHover={{ scale: 1.03 }}
+                  onClick={() => {
+                    const newAddons = new Set(addons);
+                    if (newAddons.has(addon.id)) {
+                      newAddons.delete(addon.id);
+                      const newDurations = new Map(addonDurations);
+                      newDurations.delete(addon.id);
+                      setAddonDurations(newDurations);
+                      const newQuantities = new Map(addonQuantities);
+                      newQuantities.delete(addon.id);
+                      setAddonQuantities(newQuantities);
+                    } else {
+                      newAddons.add(addon.id);
+                      if (!addon.noOptions) {
+                        const newDurations = new Map(addonDurations);
+                        newDurations.set(addon.id, 'full');
+                        setAddonDurations(newDurations);
+                      }
+                      // Set default quantity to 1 for Cinematic Shoot
+                      if (addon.id === 'cine-shoot') {
+                        const newQuantities = new Map(addonQuantities);
+                        newQuantities.set(addon.id, 1);
+                        setAddonQuantities(newQuantities);
+                      }
+                    }
+                    setAddons(newAddons);
+                  }}
+                  className={`bg-[#1E1E1E] p-6 rounded-lg cursor-pointer border-2 transition-all ${
+                    addons.has(addon.id) ? 'border-[#C9A84C] shadow-lg shadow-[#C9A84C]/20' : 'border-transparent'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    {addons.has(addon.id) ? (
+                      <Check className="w-6 h-6 text-[#C9A84C]" />
+                    ) : (
+                      <div className="w-6 h-6 border-2 border-[#888888] rounded" />
+                    )}
+                  </div>
+                  <h4 className="font-bold mb-2 text-[#F5F0E8]">{addon.name}</h4>
+                  {addons.has(addon.id) && (
+                    <span className="added-badge">Selected</span>
+                  )}
+                  
+                  {/* Duration options for selected addons (except Spot Editor) */}
+                  {addons.has(addon.id) && !addon.noOptions && (
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const newDurations = new Map(addonDurations);
+                          newDurations.set(addon.id, 'full');
+                          setAddonDurations(newDurations);
+                        }}
+                        className={`flex-1 py-1 px-2 text-xs rounded ${
+                          (addonDurations.get(addon.id) || 'full') === 'full'
+                            ? 'bg-[#C9A84C] text-[#0A0A0A]'
+                            : 'bg-[#0A0A0A] text-[#888888]'
+                        }`}
+                      >
+                        Full Day
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const newDurations = new Map(addonDurations);
+                          newDurations.set(addon.id, 'half');
+                          setAddonDurations(newDurations);
+                        }}
+                        className={`flex-1 py-1 px-2 text-xs rounded ${
+                          addonDurations.get(addon.id) === 'half'
+                            ? 'bg-[#C9A84C] text-[#0A0A0A]'
+                            : 'bg-[#0A0A0A] text-[#888888]'
+                        }`}
+                      >
+                        Half Day
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Quantity input for Cinematic Shoot */}
+                  {addons.has(addon.id) && addon.id === 'cine-shoot' && (
+                    <div className="mt-3">
+                      <label className="block text-xs text-[#CCCCCC] mb-1">Quantity</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={addonQuantities.get(addon.id) ?? 1}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          const newQuantities = new Map(addonQuantities);
+                          const raw = e.target.value;
+                          // Allow empty string while typing; store 0 as sentinel so field appears empty
+                          if (raw === '' || raw === '0') {
+                            newQuantities.set(addon.id, 0);
+                          } else {
+                            const parsed = parseInt(raw, 10);
+                            if (!isNaN(parsed) && parsed >= 1 && parsed <= 100) {
+                              newQuantities.set(addon.id, parsed);
+                            }
+                          }
+                          setAddonQuantities(newQuantities);
+                        }}
+                        onBlur={(e) => {
+                          e.stopPropagation();
+                          // On blur, clamp to valid range 1-100
+                          const current = addonQuantities.get(addon.id);
+                          if (!current || current < 1) {
+                            const newQuantities = new Map(addonQuantities);
+                            newQuantities.set(addon.id, 1);
+                            setAddonQuantities(newQuantities);
+                          } else if (current > 100) {
+                            const newQuantities = new Map(addonQuantities);
+                            newQuantities.set(addon.id, 100);
+                            setAddonQuantities(newQuantities);
+                          }
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full bg-[#0A0A0A] border border-[#C9A84C]/30 focus:border-[#C9A84C] rounded px-2 py-1 text-xs text-[#F5F0E8] outline-none"
+                        placeholder="1"
+                      />
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+            
+            {/* Add Selected Event Button */}
+            {(selectedEvent || addons.size > 0) && (
+              <div className="mt-8 text-center">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={addSelectedEventToBill}
+                  className="px-8 py-3 bg-[#C9A84C] text-[#0A0A0A] rounded-lg font-bold"
+                >
+                  Add Selected Event to Bill
+                </motion.button>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Cinematography */}
+          <div className="mb-16">
+            <h3 className="text-2xl font-bold mb-6 text-[#C9A84C]">Mobile Cinematography</h3>
+            <div className="grid md:grid-cols-3 gap-4">
+              {mobileCinematographyServices.map((service) => (
+                <motion.div
+                  key={service.id}
+                  whileHover={{ scale: 1.03 }}
+                  onClick={() => {
+                    const newServices = new Set(mobileCinematography);
+                    if (newServices.has(service.id)) {
+                      newServices.delete(service.id);
+                    } else {
+                      newServices.add(service.id);
+                    }
+                    setMobileCinematography(newServices);
+                  }}
+                  className={`bg-[#1E1E1E] p-6 rounded-lg cursor-pointer border-2 transition-all ${
+                    mobileCinematography.has(service.id) ? 'border-[#C9A84C] shadow-lg shadow-[#C9A84C]/20' : 'border-transparent'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="text-2xl">📱</div>
+                    {mobileCinematography.has(service.id) ? (
+                      <Check className="w-6 h-6 text-[#C9A84C]" />
+                    ) : (
+                      <div className="w-6 h-6 border-2 border-[#888888] rounded" />
+                    )}
+                  </div>
+                  <h4 className="font-bold mb-2 text-[#F5F0E8]">{service.name}</h4>
+                  {mobileCinematography.has(service.id) && (
+                    <span className="added-badge">Selected</span>
                   )}
                 </motion.div>
               ))}
@@ -982,44 +1219,6 @@ ${billUrl}
               </div>
             )}
           </div>
-
-          {/* Add-on Services */}
-          <div className="mb-16">
-            <h3 className="text-2xl font-bold mb-6 text-[#C9A84C]">Add-on Services</h3>
-            <div className="grid md:grid-cols-3 gap-4">
-              {addonServices.map((addon) => (
-                <motion.div
-                  key={addon.id}
-                  whileHover={{ scale: 1.03 }}
-                  onClick={() => {
-                    const newAddons = new Set(addons);
-                    if (newAddons.has(addon.id)) {
-                      newAddons.delete(addon.id);
-                    } else {
-                      newAddons.add(addon.id);
-                    }
-                    setAddons(newAddons);
-                  }}
-                  className={`bg-[#1E1E1E] p-6 rounded-lg cursor-pointer border-2 transition-all ${addons.has(addon.id) ? 'border-[#C9A84C] shadow-lg shadow-[#C9A84C]/20' : 'border-transparent'
-                    }`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-bold mb-2 text-[#F5F0E8]">{addon.name}</h4>
-                      {addons.has(addon.id) && (
-                        <span className="added-badge">Added to Bill</span>
-                      )}
-                    </div>
-                    {addons.has(addon.id) ? (
-                      <Check className="w-6 h-6 text-[#C9A84C]" />
-                    ) : (
-                      <div className="w-6 h-6 border-2 border-[#888888] rounded" />
-                    )}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
         </div>
       </section>
 
@@ -1051,21 +1250,28 @@ ${billUrl}
             />
 
             <div className="space-y-3 mb-6">
-              {selectedEvents.size > 0 && (
+              {billItems.length > 0 && (
                 <>
-                  <h3 className="text-[#C9A84C] font-bold mb-2">Events:</h3>
-                  {Array.from(selectedEvents).map(eventId => {
-                    const event = [...eventCategories.priority, ...eventCategories.other].find(e => e.id === eventId);
-                    if (!event) return null;
-                    const duration = eventDurations.get(eventId) || 'full';
-                    const price = duration === 'full' ? event.price : event.price * 0.6;
-                    return (
-                      <div key={eventId} className="flex justify-between text-[#CCCCCC]">
-                        <span>{event.name} ({duration === 'full' ? 'Full Day' : 'Half Day'})</span>
-                        <span>₹{price.toLocaleString()}</span>
+                  <h3 className="text-[#C9A84C] font-bold mb-2">Selected Events & Services:</h3>
+                  {billItems.map((item, index) => (
+                    <div key={item.id} className="mb-4 p-4 bg-[#0A0A0A] rounded-lg">
+                      <div className="flex justify-between items-center mb-2">
+                        <h4 className="text-[#F5F0E8] font-bold">{index + 1}. {item.eventName}</h4>
+                        <button
+                          onClick={() => setBillItems(prev => prev.filter(i => i.id !== item.id))}
+                          className="text-red-400 hover:text-red-300 text-sm"
+                        >
+                          Remove
+                        </button>
                       </div>
-                    );
-                  })}
+                      {item.addons.map(addon => (
+                        <div key={addon.id} className="flex justify-between text-[#CCCCCC] ml-4">
+                          <span>• {addon.name} ({addon.duration === 'full' ? 'Full Day' : 'Half Day'})</span>
+                          <span>₹{addon.price.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
                 </>
               )}
 
@@ -1079,20 +1285,27 @@ ${billUrl}
                 </>
               )}
 
-              {addons.size > 0 && (
+              {mobileCinematography.size > 0 && (
                 <>
-                  <h3 className="text-[#C9A84C] font-bold mb-2 mt-4">Add-ons:</h3>
-                  {Array.from(addons).map(addonId => {
-                    const addon = addonServices.find(a => a.id === addonId);
-                    if (!addon) return null;
+                  <h3 className="text-[#C9A84C] font-bold mb-2 mt-4">Mobile Cinematography:</h3>
+                  {Array.from(mobileCinematography).map(serviceId => {
+                    const service = mobileCinematographyServices.find(s => s.id === serviceId);
+                    if (!service) return null;
                     return (
-                      <div key={addonId} className="flex justify-between text-[#CCCCCC]">
-                        <span>{addon.name}</span>
-                        <span>₹{addon.price.toLocaleString()}</span>
+                      <div key={serviceId} className="flex justify-between text-[#CCCCCC]">
+                        <span>{service.name}</span>
+                        <span>₹{service.price.toLocaleString()}</span>
                       </div>
                     );
                   })}
                 </>
+              )}
+
+              {billItems.length === 0 && albumType === 'none' && mobileCinematography.size === 0 && (
+                <div className="text-center text-[#888888] py-8">
+                  <p>No services selected yet.</p>
+                  <p className="text-sm mt-2">Select an event and add-on services above to build your bill.</p>
+                </div>
               )}
             </div>
 
@@ -1201,6 +1414,52 @@ ${billUrl}
 
           {!bookingSuccess ? (
             <div className="bg-[#1E1E1E] p-8 rounded-lg">
+              {/* Selected Services Summary */}
+              {billItems.length > 0 && (
+                <div className="mb-8 p-6 bg-[#0A0A0A] rounded-lg">
+                  <h3 className="text-xl font-bold text-[#C9A84C] mb-4">Selected Services Summary</h3>
+                  {billItems.map((item, index) => (
+                    <div key={item.id} className="mb-4">
+                      <h4 className="text-[#F5F0E8] font-bold mb-2">{index + 1}. {item.eventName}</h4>
+                      {item.addons.map((addon, addonIndex) => (
+                        <div key={addon.id} className="flex justify-between text-[#CCCCCC] ml-4 mb-1">
+                          <span>
+                            {index + 1}.{addonIndex + 1} {addon.name} ({addon.duration === 'full' ? 'Full Day' : 'Half Day'})
+                            {addon.quantity > 1 && <span className="text-[#C9A84C]"> x{addon.quantity}</span>}
+                          </span>
+                          <span>₹{addon.price.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                  {albumType !== 'none' && (
+                    <div className="flex justify-between text-[#CCCCCC] mt-4 pt-4 border-t border-[#C9A84C]/20">
+                      <span>Album: {albumType === 'small' ? '8×24 Small' : '12×36 Large'} ({albumPages} pages)</span>
+                      <span>₹{((albumPages * (albumType === 'small' ? 70 : 100)) + (albumType === 'small' ? 500 : 700)).toLocaleString()}</span>
+                    </div>
+                  )}
+                  {mobileCinematography.size > 0 && (
+                    <div className="mt-4 pt-4 border-t border-[#C9A84C]/20">
+                      <h4 className="text-[#C9A84C] font-bold mb-2">Mobile Cinematography:</h4>
+                      {Array.from(mobileCinematography).map(serviceId => {
+                        const service = mobileCinematographyServices.find(s => s.id === serviceId);
+                        if (!service) return null;
+                        return (
+                          <div key={serviceId} className="flex justify-between text-[#CCCCCC] mb-1">
+                            <span>{service.name}</span>
+                            <span>₹{service.price.toLocaleString()}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="flex justify-between text-xl font-bold text-[#C9A84C] mt-4 pt-4 border-t border-[#C9A84C]">
+                    <span>Total Amount</span>
+                    <span>₹{calculateTotal().toLocaleString()}</span>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-6">
                 {/* Full Name */}
                 <div>
@@ -1253,44 +1512,22 @@ ${billUrl}
                   )}
                 </div>
 
-                {/* Event Type */}
-                <div>
-                  <label className="block text-sm text-[#CCCCCC] mb-2">Event Type *</label>
-                  <select
-                    value={formData.eventType}
-                    onChange={(e) => setFormData({ ...formData, eventType: e.target.value })}
-                    className={`w-full bg-[#0A0A0A] border-2 ${formErrors.eventType ? 'border-red-500' : 'border-[#C9A84C]/30'
-                      } focus:border-[#C9A84C] rounded-lg px-4 py-3 outline-none transition-colors`}
-                  >
-                    <option value="">Select event type</option>
-                    {[...eventCategories.priority, ...eventCategories.other].map(event => (
-                      <option key={event.id} value={event.name}>{event.name}</option>
-                    ))}
-                  </select>
-                  {formErrors.eventType && (
-                    <p style={{
-                      color: '#ff4444',
-                      fontSize: '11px',
-                      marginTop: '4px',
-                      marginLeft: '2px',
-                      fontFamily: 'DM Sans, sans-serif'
-                    }}>
-                      ❌ {formErrors.eventType}
-                    </p>
-                  )}
-                </div>
-
                 {/* Event Date */}
                 <div>
                   <label className="block text-sm text-[#CCCCCC] mb-2">Event Date *</label>
-                  <input
-                    type="date"
-                    value={formData.eventDate}
-                    onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
-                    className={`w-full bg-[#0A0A0A] border-2 ${formErrors.eventDate ? 'border-red-500' : 'border-[#C9A84C]/30'
-                      } focus:border-[#C9A84C] rounded-lg px-4 py-3 outline-none transition-colors`}
-                    min={new Date().toISOString().split('T')[0]}
-                  />
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={formData.eventDate}
+                      onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
+                      className={`w-full bg-[#0A0A0A] border-2 ${formErrors.eventDate ? 'border-red-500' : 'border-[#C9A84C]/30'
+                        } focus:border-[#C9A84C] rounded-lg px-4 py-3 outline-none transition-colors text-[#F5F0E8] cursor-pointer`}
+                      min={new Date().toISOString().split('T')[0]}
+                      style={{
+                        colorScheme: 'dark'
+                      }}
+                    />
+                  </div>
                   {formErrors.eventDate && (
                     <p style={{
                       color: '#ff4444',
@@ -1764,10 +2001,54 @@ ${billUrl}
                       fontSize: '13px',
                       lineHeight: '2.2'
                     }}>
-                      <div><span style={{ color: '#888' }}>Event  : </span><span style={{ color: '#fff' }}>{formData.eventType}</span></div>
                       <div><span style={{ color: '#888' }}>Date   : </span><span style={{ color: '#fff' }}>{formData.eventDate}</span></div>
                       <div><span style={{ color: '#888' }}>Venue  : </span><span style={{ color: '#fff' }}>{formData.location}</span></div>
-                      <div><span style={{ color: '#888' }}>Amount : </span><span style={{ color: '#C9A84C', fontWeight: '700' }}>₹{calculateTotal().toLocaleString()}</span></div>
+
+                      {/* Events & Add-on Services */}
+                      {billItems.length > 0 && (
+                        <div style={{ marginTop: '10px' }}>
+                          <div style={{ color: '#C9A84C', fontWeight: '600', marginBottom: '4px' }}>Events & Add-on Services</div>
+                          {billItems.map((item, idx) => (
+                            <div key={item.id} style={{ marginBottom: '6px' }}>
+                              <div style={{ color: '#fff' }}>{idx + 1}. {item.eventName}</div>
+                              {item.addons.map(addon => (
+                                <div key={addon.id} style={{ color: '#aaa', paddingLeft: '12px' }}>
+                                  • {addon.name} ({addon.duration === 'full' ? 'Full Day' : 'Half Day'}){addon.quantity > 1 ? ` ×${addon.quantity}` : ''} — <span style={{ color: '#C9A84C' }}>₹{addon.price.toLocaleString()}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Album Packages */}
+                      {albumType !== 'none' && (
+                        <div style={{ marginTop: '10px' }}>
+                          <div style={{ color: '#C9A84C', fontWeight: '600', marginBottom: '4px' }}>Album Package</div>
+                          <div style={{ color: '#aaa', paddingLeft: '12px' }}>
+                            • {albumType === 'small' ? 'Small Album' : 'Large Album'} — {albumPages} pages — <span style={{ color: '#C9A84C' }}>₹{((albumPages * (albumType === 'small' ? 70 : 100)) + (albumType === 'small' ? 500 : 700)).toLocaleString()}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Mobile Cinematography */}
+                      {mobileCinematography.size > 0 && (
+                        <div style={{ marginTop: '10px' }}>
+                          <div style={{ color: '#C9A84C', fontWeight: '600', marginBottom: '4px' }}>Mobile Cinematography</div>
+                          {Array.from(mobileCinematography).map(serviceId => {
+                            const service = mobileCinematographyServices.find(s => s.id === serviceId);
+                            return service ? (
+                              <div key={serviceId} style={{ color: '#aaa', paddingLeft: '12px' }}>
+                                • {service.name} — <span style={{ color: '#C9A84C' }}>₹{service.price.toLocaleString()}</span>
+                              </div>
+                            ) : null;
+                          })}
+                        </div>
+                      )}
+
+                      <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #2D2D2D' }}>
+                        <span style={{ color: '#888' }}>Amount : </span><span style={{ color: '#C9A84C', fontWeight: '700' }}>₹{calculateTotal().toLocaleString()}</span>
+                      </div>
                     </div>
                     <button
                       onClick={() => {
@@ -1853,13 +2134,58 @@ ${billUrl}
                 textAlign: 'left',
                 marginBottom: '24px'
               }}>
-                <div style={{ fontSize: '12px', color: '#C9A84C', marginBottom: '8px' }}>
+                <div style={{ fontSize: '12px', color: '#C9A84C', marginBottom: '8px', fontWeight: '600' }}>
                   Booking Summary:
                 </div>
-                <div style={{ fontSize: '12px', color: '#C9A84C', lineHeight: '1.6' }}>
-                  📋 {formData.eventType} · {formData.eventDate}<br />
-                  📍 {formData.location}<br />
-                  💰 ₹{calculateTotal().toLocaleString()}
+                <div style={{ fontSize: '12px', lineHeight: '2' }}>
+                  <div><span style={{ color: '#888' }}>Date : </span><span style={{ color: '#fff' }}>{formData.eventDate}</span></div>
+                  <div><span style={{ color: '#888' }}>Venue : </span><span style={{ color: '#fff' }}>{formData.location}</span></div>
+
+                  {/* Events & Add-on Services */}
+                  {billItems.length > 0 && (
+                    <div style={{ marginTop: '8px' }}>
+                      <div style={{ color: '#C9A84C', fontWeight: '600', marginBottom: '4px' }}>Events & Add-on Services</div>
+                      {billItems.map((item, idx) => (
+                        <div key={item.id} style={{ marginBottom: '4px' }}>
+                          <div style={{ color: '#fff' }}>{idx + 1}. {item.eventName}</div>
+                          {item.addons.map(addon => (
+                            <div key={addon.id} style={{ color: '#aaa', paddingLeft: '12px' }}>
+                              • {addon.name} ({addon.duration === 'full' ? 'Full Day' : 'Half Day'}){addon.quantity > 1 ? ` ×${addon.quantity}` : ''} — <span style={{ color: '#C9A84C' }}>₹{addon.price.toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Album Packages */}
+                  {albumType !== 'none' && (
+                    <div style={{ marginTop: '8px' }}>
+                      <div style={{ color: '#C9A84C', fontWeight: '600', marginBottom: '4px' }}>Album Package</div>
+                      <div style={{ color: '#aaa', paddingLeft: '12px' }}>
+                        • {albumType === 'small' ? 'Small Album' : 'Large Album'} — {albumPages} pages — <span style={{ color: '#C9A84C' }}>₹{((albumPages * (albumType === 'small' ? 70 : 100)) + (albumType === 'small' ? 500 : 700)).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mobile Cinematography */}
+                  {mobileCinematography.size > 0 && (
+                    <div style={{ marginTop: '8px' }}>
+                      <div style={{ color: '#C9A84C', fontWeight: '600', marginBottom: '4px' }}>Mobile Cinematography</div>
+                      {Array.from(mobileCinematography).map(serviceId => {
+                        const service = mobileCinematographyServices.find(s => s.id === serviceId);
+                        return service ? (
+                          <div key={serviceId} style={{ color: '#aaa', paddingLeft: '12px' }}>
+                            • {service.name} — <span style={{ color: '#C9A84C' }}>₹{service.price.toLocaleString()}</span>
+                          </div>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #2D2D2D' }}>
+                    <span style={{ color: '#888' }}>💰 Total : </span><span style={{ color: '#C9A84C', fontWeight: '700' }}>₹{calculateTotal().toLocaleString()}</span>
+                  </div>
                 </div>
               </div>
 
@@ -2514,8 +2840,8 @@ ${billUrl}
                   padding: '32px 40px',
                   background: '#0F0F0F'
                 }}>
-                  {/* Events Section */}
-                  {selectedEvents.size > 0 && (
+                  {/* Bill Items Section */}
+                  {billItems.length > 0 && (
                     <div style={{ marginBottom: '20px' }}>
                       <div style={{
                         display: 'flex',
@@ -2532,35 +2858,42 @@ ${billUrl}
                           color: '#C9A84C',
                           textTransform: 'uppercase',
                           letterSpacing: '2px'
-                        }}>EVENTS</span>
+                        }}>SELECTED SERVICES</span>
                       </div>
-                      {Array.from(selectedEvents).map(eventId => {
-                        const event = [...eventCategories.priority, ...eventCategories.other].find(e => e.id === eventId);
-                        if (!event) return null;
-                        const duration = eventDurations.get(eventId) || 'full';
-                        const price = duration === 'full' ? event.price : event.price * 0.6;
-                        return (
-                          <div key={eventId} style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '8px 0',
-                            borderBottom: '1px dotted #1E1E1E'
+                      {billItems.map((item, index) => (
+                        <div key={item.id} style={{ marginBottom: '16px' }}>
+                          <div style={{
+                            fontSize: '13px',
+                            fontWeight: 'bold',
+                            color: '#C9A84C',
+                            marginBottom: '4px'
                           }}>
-                            <span style={{
-                              fontSize: '13px',
-                              color: '#E0E0E0'
-                            }}>
-                              {event.name} <span style={{ color: '#888888' }}>({duration === 'full' ? 'Full Day' : 'Half Day'})</span>
-                            </span>
-                            <span style={{
-                              fontSize: '13px',
-                              fontWeight: 'bold',
-                              color: 'white'
-                            }}>₹{price.toLocaleString()}</span>
+                            {index + 1}. {item.eventName}
                           </div>
-                        );
-                      })}
+                          {item.addons.map((addon, addonIndex) => (
+                            <div key={addon.id} style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              padding: '4px 0 4px 16px',
+                              borderBottom: '1px dotted #1E1E1E'
+                            }}>
+                              <span style={{
+                                fontSize: '12px',
+                                color: '#E0E0E0'
+                              }}>
+                                {index + 1}.{addonIndex + 1} {addon.name} <span style={{ color: '#888888' }}>({addon.duration === 'full' ? 'Full Day' : 'Half Day'})</span>
+                                {addon.quantity > 1 && <span style={{ color: '#C9A84C' }}> x{addon.quantity}</span>}
+                              </span>
+                              <span style={{
+                                fontSize: '12px',
+                                fontWeight: 'bold',
+                                color: 'white'
+                              }}>₹{addon.price.toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
                     </div>
                   )}
 
@@ -2608,8 +2941,8 @@ ${billUrl}
                     </div>
                   )}
 
-                  {/* Add-ons Section */}
-                  {addons.size > 0 && (
+                  {/* Mobile Cinematography Section */}
+                  {mobileCinematography.size > 0 && (
                     <div style={{ marginBottom: '20px' }}>
                       <div style={{
                         display: 'flex',
@@ -2619,20 +2952,20 @@ ${billUrl}
                         paddingBottom: '8px',
                         borderBottom: '1px solid #1E1E1E'
                       }}>
-                        <span style={{ fontSize: '14px' }}>✨</span>
+                        <span style={{ fontSize: '14px' }}>📱</span>
                         <span style={{
                           fontSize: '11px',
                           fontWeight: 'bold',
                           color: '#C9A84C',
                           textTransform: 'uppercase',
                           letterSpacing: '2px'
-                        }}>ADD-ONS</span>
+                        }}>MOBILE CINEMATOGRAPHY</span>
                       </div>
-                      {Array.from(addons).map(addonId => {
-                        const addon = addonServices.find(a => a.id === addonId);
-                        if (!addon) return null;
+                      {Array.from(mobileCinematography).map(serviceId => {
+                        const service = mobileCinematographyServices.find(s => s.id === serviceId);
+                        if (!service) return null;
                         return (
-                          <div key={addonId} style={{
+                          <div key={serviceId} style={{
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'center',
@@ -2642,12 +2975,16 @@ ${billUrl}
                             <span style={{
                               fontSize: '13px',
                               color: '#E0E0E0'
-                            }}>{addon.name}</span>
+                            }}>
+                              {service.name}
+                            </span>
                             <span style={{
                               fontSize: '13px',
                               fontWeight: 'bold',
                               color: 'white'
-                            }}>₹{addon.price.toLocaleString()}</span>
+                            }}>
+                              ₹{service.price.toLocaleString()}
+                            </span>
                           </div>
                         );
                       })}
@@ -2655,7 +2992,7 @@ ${billUrl}
                   )}
 
                   {/* No Services Message */}
-                  {selectedEvents.size === 0 && addons.size === 0 && (
+                  {billItems.length === 0 && albumType === 'none' && mobileCinematography.size === 0 && (
                     <div style={{
                       textAlign: 'center',
                       fontSize: '13px',
@@ -2663,7 +3000,7 @@ ${billUrl}
                       color: '#555555',
                       padding: '40px 0'
                     }}>
-                      No services selected yet.
+                      No services selected yet. Please add events and services to generate a bill.
                     </div>
                   )}
                 </div>
