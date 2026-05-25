@@ -26,7 +26,7 @@ export default function App() {
   const [siteLoaded, setSiteLoaded] = useState(false);
   const [selectedEvents, setSelectedEvents] = useState<Set<string>>(new Set());
   const [eventDurations, setEventDurations] = useState<Map<string, 'full' | 'half'>>(new Map());
-  const [albumType, setAlbumType] = useState<'small' | 'large'>('small');
+  const [albumType, setAlbumType] = useState<'small' | 'large' | 'none'>('none');
   const [albumPages, setAlbumPages] = useState(20);
   const [addons, setAddons] = useState<Set<string>>(new Set());
   const [customerName, setCustomerName] = useState('');
@@ -42,6 +42,7 @@ export default function App() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [billImageBase64, setBillImageBase64] = useState<string | null>(null);
+  const [paymentScreenshotFile, setPaymentScreenshotFile] = useState<File | null>(null);
 
   const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -277,9 +278,11 @@ export default function App() {
     });
 
     // Album
-    const albumPricePerPage = albumType === 'small' ? 70 : 100;
-    const albumCover = albumType === 'small' ? 500 : 700;
-    total += (albumPages * albumPricePerPage) + albumCover;
+    if (albumType !== 'none') {
+      const albumPricePerPage = albumType === 'small' ? 70 : 100;
+      const albumCover = albumType === 'small' ? 500 : 700;
+      total += (albumPages * albumPricePerPage) + albumCover;
+    }
 
     // Addons
     addons.forEach(addonId => {
@@ -338,7 +341,9 @@ export default function App() {
     });
 
     // Add album selection
-    selectedServicesList.push(`${albumType === 'small' ? '8×24 Small' : '12×36 Large'} Album (${albumPages} pages)`);
+    if (albumType !== 'none') {
+      selectedServicesList.push(`${albumType === 'small' ? '8×24 Small' : '12×36 Large'} Album (${albumPages} pages)`);
+    }
 
     // Format the WhatsApp message with all form data
     const message = `🎬 *NEW BOOKING REQUEST*
@@ -599,6 +604,21 @@ ${billUrl}
     setBookingSuccess(false);
     scrollToSection('services');
   };
+
+  // Auto-populate booking form when events are selected
+  useEffect(() => {
+    if (selectedEvents.size > 0) {
+      // Get the first selected event to populate the event type
+      const firstEventId = Array.from(selectedEvents)[0];
+      const firstEvent = [...eventCategories.priority, ...eventCategories.other].find(e => e.id === firstEventId);
+      if (firstEvent) {
+        setFormData(prev => ({ ...prev, eventType: firstEvent.name }));
+      }
+    } else {
+      // Clear event type if no events selected
+      setFormData(prev => ({ ...prev, eventType: '' }));
+    }
+  }, [selectedEvents]);
 
   // Modal scroll behavior effects
   useEffect(() => {
@@ -920,14 +940,15 @@ ${billUrl}
           {/* Album Packages */}
           <div className="mb-16">
             <h3 className="text-2xl font-bold mb-6 text-[#C9A84C]">Album Packages</h3>
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div className="grid md:grid-cols-3 gap-6 mb-6">
               <motion.div
                 whileHover={{ scale: 1.02 }}
-                onClick={() => setAlbumType('small')}
+                onClick={() => setAlbumType(albumType === 'small' ? 'none' : 'small')}
                 className={`bg-[#1E1E1E] p-8 rounded-lg cursor-pointer border-2 ${albumType === 'small' ? 'border-[#C9A84C]' : 'border-transparent'
                   }`}
               >
                 <h4 className="text-2xl font-bold mb-3">8×24 Small Album</h4>
+                <p className="text-[#888888] text-sm mb-3">₹70/page + ₹500 cover</p>
                 {albumType === 'small' && (
                   <span className="added-badge">Selected</span>
                 )}
@@ -935,28 +956,31 @@ ${billUrl}
               </motion.div>
               <motion.div
                 whileHover={{ scale: 1.02 }}
-                onClick={() => setAlbumType('large')}
+                onClick={() => setAlbumType(albumType === 'large' ? 'none' : 'large')}
                 className={`bg-[#1E1E1E] p-8 rounded-lg cursor-pointer border-2 ${albumType === 'large' ? 'border-[#C9A84C]' : 'border-transparent'
                   }`}
               >
                 <h4 className="text-2xl font-bold mb-3">12×36 Large Album</h4>
+                <p className="text-[#888888] text-sm mb-3">₹100/page + ₹700 cover</p>
                 {albumType === 'large' && (
                   <span className="added-badge">Selected</span>
                 )}
                 {albumType === 'large' && <Check className="w-6 h-6 text-[#C9A84C] mt-2" />}
               </motion.div>
             </div>
-            <div className="bg-[#1E1E1E] p-6 rounded-lg max-w-md">
-              <label className="block mb-3 text-[#CCCCCC]">Number of Pages</label>
-              <input
-                type="number"
-                min="10"
-                max="100"
-                value={albumPages}
-                onChange={(e) => setAlbumPages(Number(e.target.value))}
-                className="w-full bg-[#0A0A0A] border-2 border-[#C9A84C]/30 focus:border-[#C9A84C] rounded-lg px-4 py-3 outline-none transition-colors"
-              />
-            </div>
+            {albumType !== 'none' && (
+              <div className="bg-[#1E1E1E] p-6 rounded-lg max-w-md">
+                <label className="block mb-3 text-[#CCCCCC]">Number of Pages</label>
+                <input
+                  type="number"
+                  min="10"
+                  max="100"
+                  value={albumPages}
+                  onChange={(e) => setAlbumPages(Number(e.target.value))}
+                  className="w-full bg-[#0A0A0A] border-2 border-[#C9A84C]/30 focus:border-[#C9A84C] rounded-lg px-4 py-3 outline-none transition-colors"
+                />
+              </div>
+            )}
           </div>
 
           {/* Add-on Services */}
@@ -1018,7 +1042,11 @@ ${billUrl}
               type="text"
               placeholder="Customer Name"
               value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
+              onChange={(e) => {
+                setCustomerName(e.target.value);
+                // Auto-populate booking form name
+                setFormData(prev => ({ ...prev, fullName: e.target.value }));
+              }}
               className="w-full bg-[#0A0A0A] border-2 border-[#C9A84C]/30 focus:border-[#C9A84C] rounded-lg px-4 py-3 mb-6 outline-none transition-colors"
             />
 
@@ -1041,11 +1069,15 @@ ${billUrl}
                 </>
               )}
 
-              <h3 className="text-[#C9A84C] font-bold mb-2 mt-4">Album:</h3>
-              <div className="flex justify-between text-[#CCCCCC]">
-                <span>{albumType === 'small' ? '8×24 Small' : '12×36 Large'} Album ({albumPages} pages)</span>
-                <span>₹{((albumPages * (albumType === 'small' ? 70 : 100)) + (albumType === 'small' ? 500 : 700)).toLocaleString()}</span>
-              </div>
+              {albumType !== 'none' && (
+                <>
+                  <h3 className="text-[#C9A84C] font-bold mb-2 mt-4">Album:</h3>
+                  <div className="flex justify-between text-[#CCCCCC]">
+                    <span>{albumType === 'small' ? '8×24 Small' : '12×36 Large'} Album ({albumPages} pages)</span>
+                    <span>₹{((albumPages * (albumType === 'small' ? 70 : 100)) + (albumType === 'small' ? 500 : 700)).toLocaleString()}</span>
+                  </div>
+                </>
+              )}
 
               {addons.size > 0 && (
                 <>
@@ -1413,6 +1445,185 @@ ${billUrl}
                   )}
                 </div>
 
+                {/* Payment Screenshot Upload */}
+                <div style={{ marginBottom: '24px' }}>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    color: '#888888',
+                    marginBottom: '6px',
+                    fontFamily: 'DM Sans, sans-serif'
+                  }}>
+                    Payment Screenshot *
+                    <span style={{ 
+                      fontSize: '11px', 
+                      color: '#555555',
+                      fontWeight: '400',
+                      marginLeft: '8px'
+                    }}>
+                      Upload your UPI payment confirmation screenshot
+                    </span>
+                  </label>
+
+                  {!paymentScreenshotFile ? (
+                    // UPLOAD ZONE — shown when no file selected
+                    <div
+                      onClick={() => document.getElementById('payment-screenshot-input')?.click()}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const file = e.dataTransfer.files[0];
+                        if (file && file.type.startsWith('image/')) {
+                          if (file.size > 5 * 1024 * 1024) {
+                            setFormErrors(prev => ({ ...prev, screenshot: 'File too large. Max 5MB allowed.' }));
+                            return;
+                          }
+                          setPaymentScreenshotFile(file);
+                          setFormErrors(prev => ({ ...prev, screenshot: '' }));
+                        }
+                      }}
+                      style={{
+                        background: '#0F0F0F',
+                        border: '2px dashed #2D2D2D',
+                        borderRadius: '10px',
+                        padding: '40px 20px',
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLDivElement).style.borderColor = '#C9A84C';
+                        (e.currentTarget as HTMLDivElement).style.background = 'rgba(201,168,76,0.04)';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLDivElement).style.borderColor = '#2D2D2D';
+                        (e.currentTarget as HTMLDivElement).style.background = '#0F0F0F';
+                      }}
+                    >
+                      <div style={{ fontSize: '32px', marginBottom: '10px' }}>📸</div>
+                      <div style={{
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#ffffff',
+                        marginBottom: '6px',
+                        fontFamily: 'DM Sans, sans-serif'
+                      }}>
+                        Drop screenshot here
+                      </div>
+                      <div style={{
+                        fontSize: '12px',
+                        color: '#555555',
+                        fontFamily: 'DM Sans, sans-serif'
+                      }}>
+                        or click to upload
+                      </div>
+                      <div style={{
+                        fontSize: '11px',
+                        color: '#444444',
+                        marginTop: '8px',
+                        fontFamily: 'DM Sans, sans-serif'
+                      }}>
+                        Accepted: JPG, PNG, WEBP · Max 5MB
+                      </div>
+
+                      <input
+                        id="payment-screenshot-input"
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.size > 5 * 1024 * 1024) {
+                              setFormErrors(prev => ({ ...prev, screenshot: 'File too large. Max 5MB allowed.' }));
+                              return;
+                            }
+                            setPaymentScreenshotFile(file);
+                            setFormErrors(prev => ({ ...prev, screenshot: '' }));
+                          }
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    // PREVIEW — shown after file selected
+                    <div style={{
+                      background: '#141414',
+                      border: '1px solid #C9A84C',
+                      borderRadius: '10px',
+                      padding: '14px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px'
+                    }}>
+                      <img
+                        src={URL.createObjectURL(paymentScreenshotFile)}
+                        alt="Payment Screenshot"
+                        style={{
+                          width: '56px',
+                          height: '56px',
+                          objectFit: 'cover',
+                          borderRadius: '6px',
+                          border: '1px solid #2D2D2D',
+                          flexShrink: 0
+                        }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{
+                          fontSize: '13px',
+                          fontWeight: '500',
+                          color: '#ffffff',
+                          fontFamily: 'DM Sans, sans-serif',
+                          marginBottom: '4px'
+                        }}>
+                          {paymentScreenshotFile.name}
+                        </div>
+                        <div style={{
+                          fontSize: '11px',
+                          color: '#4CAF50',
+                          fontFamily: 'DM Sans, sans-serif'
+                        }}>
+                          ✅ Ready to send
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setPaymentScreenshotFile(null)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#888888',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          fontFamily: 'DM Sans, sans-serif',
+                          padding: '4px 8px',
+                          borderRadius: '4px'
+                        }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as HTMLButtonElement).style.color = '#ff4444';
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLButtonElement).style.color = '#888888';
+                        }}
+                      >
+                        ✕ Remove
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Error message */}
+                  {formErrors.screenshot && (
+                    <p style={{
+                      color: '#ff4444',
+                      fontSize: '11px',
+                      marginTop: '6px',
+                      marginLeft: '2px',
+                      fontFamily: 'DM Sans, sans-serif'
+                    }}>
+                      ❌ {formErrors.screenshot}
+                    </p>
+                  )}
+                </div>
+
                 {/* Message / Notes */}
                 <div>
                   <label className="block text-sm text-[#CCCCCC] mb-2">Message / Notes</label>
@@ -1696,7 +1907,10 @@ ${billUrl}
               whileHover={{ y: -5 }}
               className="bg-[#1E1E1E] p-8 rounded-lg text-center hover:bg-[#25D366]/10 transition-colors"
             >
-              <Phone className="w-12 h-12 text-[#25D366] mx-auto mb-4" />
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="52" height="52" fill="#25D366" className="mx-auto mb-4">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.118 1.528 5.855L.057 23.428a.75.75 0 00.916.916l5.573-1.471A11.943 11.943 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.707 9.707 0 01-4.95-1.355l-.355-.211-3.685.972.986-3.595-.231-.371A9.712 9.712 0 012.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/>
+              </svg>
               <h3 className="font-bold mb-2">WhatsApp</h3>
               <p className="text-[#CCCCCC] text-sm">+91 77200 49725</p>
               <p className="text-[#888888] text-xs mt-2">Chat with us</p>
@@ -2351,46 +2565,48 @@ ${billUrl}
                   )}
 
                   {/* Album Section */}
-                  <div style={{ marginBottom: '20px' }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      marginBottom: '8px',
-                      paddingBottom: '8px',
-                      borderBottom: '1px solid #1E1E1E'
-                    }}>
-                      <span style={{ fontSize: '14px' }}>📖</span>
-                      <span style={{
-                        fontSize: '11px',
-                        fontWeight: 'bold',
-                        color: '#C9A84C',
-                        textTransform: 'uppercase',
-                        letterSpacing: '2px'
-                      }}>ALBUM</span>
-                    </div>
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '8px 0',
-                      borderBottom: '1px dotted #1E1E1E'
-                    }}>
-                      <span style={{
-                        fontSize: '13px',
-                        color: '#E0E0E0'
+                  {albumType !== 'none' && (
+                    <div style={{ marginBottom: '20px' }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginBottom: '8px',
+                        paddingBottom: '8px',
+                        borderBottom: '1px solid #1E1E1E'
                       }}>
-                        {albumType === 'small' ? '8×24 Small' : '12×36 Large'} Album ({albumPages} pages)
-                      </span>
-                      <span style={{
-                        fontSize: '13px',
-                        fontWeight: 'bold',
-                        color: 'white'
+                        <span style={{ fontSize: '14px' }}>📖</span>
+                        <span style={{
+                          fontSize: '11px',
+                          fontWeight: 'bold',
+                          color: '#C9A84C',
+                          textTransform: 'uppercase',
+                          letterSpacing: '2px'
+                        }}>ALBUM</span>
+                      </div>
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '8px 0',
+                        borderBottom: '1px dotted #1E1E1E'
                       }}>
-                        ₹{((albumPages * (albumType === 'small' ? 70 : 100)) + (albumType === 'small' ? 500 : 700)).toLocaleString()}
-                      </span>
+                        <span style={{
+                          fontSize: '13px',
+                          color: '#E0E0E0'
+                        }}>
+                          {albumType === 'small' ? '8×24 Small' : '12×36 Large'} Album ({albumPages} pages)
+                        </span>
+                        <span style={{
+                          fontSize: '13px',
+                          fontWeight: 'bold',
+                          color: 'white'
+                        }}>
+                          ₹{((albumPages * (albumType === 'small' ? 70 : 100)) + (albumType === 'small' ? 500 : 700)).toLocaleString()}
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Add-ons Section */}
                   {addons.size > 0 && (
