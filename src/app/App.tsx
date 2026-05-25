@@ -8,6 +8,19 @@ import { uploadToCloudinary } from '../utils/uploadToCloudinary';
 import phonepeQR from '../imports/WhatsApp_Image_2026-05-22_at_10.00.08_PM.jpeg';
 import instagramQR from '../imports/WhatsApp_Image_2026-05-22_at_10.00.07_PM.jpeg';
 
+// Logo import
+import logo from '../imports/Logo.jpeg';
+
+// Portfolio images imports
+import portfolio1 from '../imports/portfolio_images/3G0A8995.jpg.jpeg';
+import portfolio2 from '../imports/portfolio_images/3G0A9004.jpg.jpeg';
+import portfolio3 from '../imports/portfolio_images/3G0A9159.jpg.jpeg';
+import portfolio4 from '../imports/portfolio_images/3G0A9338.jpg.jpeg';
+import portfolio5 from '../imports/portfolio_images/IMG_4147.jpg.jpeg';
+import portfolio6 from '../imports/portfolio_images/IMG_4155.jpg.jpeg';
+import portfolio7 from '../imports/portfolio_images/MHPL6847.jpg.jpeg';
+import portfolio8 from '../imports/portfolio_images/MHPL7323.jpg.jpeg';
+
 export default function App() {
   const [splashVisible, setSplashVisible] = useState(true);
   const [siteLoaded, setSiteLoaded] = useState(false);
