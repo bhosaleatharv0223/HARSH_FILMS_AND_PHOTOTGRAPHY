@@ -611,7 +611,15 @@ ${selectedServicesList.map(service => `${service}`).join('\n')}
         );
       }
 
-      setUploadStep('📲 Opening WhatsApp...');
+      // UPLOAD PAYMENT SCREENSHOT
+      let paymentScreenshotUrl = 'Not provided';
+      if (paymentScreenshotFile) {
+        setUploadStep('📸 Uploading payment screenshot... please wait');
+        paymentScreenshotUrl = await uploadToCloudinary(
+          paymentScreenshotFile,
+          `Payment_${clientName}_${dateStr}.jpg`
+        );
+      }
 
       setUploadStep('📲 Opening WhatsApp...');
 
@@ -633,17 +641,18 @@ ${selectedServicesList.map(service => `${service}`).join('\n')}
 ━━━━━━━━━━━━━━━━━━━━━━━━━
 👤 *CLIENT DETAILS*
 🙍 *Name*    →  ${formData.fullName}
-� *CPhone*   →  +91 ${formData.phone}
-🎊 *Event*   →  ${formData.eventType}
-� **Date*    →  ${formData.eventDate}
+📱 *Phone*   →  +91 ${formData.phone}
+📅 *Date*    →  ${formData.eventDate}
 📍 *Venue*   →  ${formData.location}
-�  *Amount*  →  ₹${calculateTotal().toLocaleString()}
-� *Notees*   →  ${formData.message?.trim() || 'No special requests'}
+💰 *Amount*  →  ₹${calculateTotal().toLocaleString()}
+📝 *Notes*   →  ${formData.message?.trim() || 'No special requests'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━
 📎 *ATTACHMENTS*
 🧾 *Invoice:*
 ${billUrl}
+💳 *Payment Screenshot:*
+${paymentScreenshotUrl}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ *ACTION REQUIRED*
@@ -682,6 +691,7 @@ ${billUrl}
     });
     setFormErrors({});
     setBillImageBase64(null);
+    setPaymentScreenshotFile(null);
     setBookingSuccess(false);
     scrollToSection('services');
   };
@@ -2060,6 +2070,7 @@ ${billUrl}
                         setUploadError('');
                         setFormErrors({});
                         setBillImageBase64(null);
+                        setPaymentScreenshotFile(null);
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
                       style={{
