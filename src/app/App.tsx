@@ -4,17 +4,9 @@ import { Camera, Phone, Instagram, Mail, MapPin, ChevronDown, Check, X, Menu, Zo
 import { toast, Toaster } from 'sonner';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { uploadToCloudinary } from '../utils/uploadToCloudinary';
 import phonepeQR from '../imports/WhatsApp_Image_2026-05-22_at_10.00.08_PM.jpeg';
 import instagramQR from '../imports/WhatsApp_Image_2026-05-22_at_10.00.07_PM.jpeg';
-import logo from '../imports/Logo.jpeg';
-import portfolio1 from '../imports/portfolio_images/3G0A8995.jpg.jpeg';
-import portfolio2 from '../imports/portfolio_images/3G0A9004.jpg.jpeg';
-import portfolio3 from '../imports/portfolio_images/3G0A9159.jpg.jpeg';
-import portfolio4 from '../imports/portfolio_images/3G0A9338.jpg.jpeg';
-import portfolio5 from '../imports/portfolio_images/IMG_4147.jpg.jpeg';
-import portfolio6 from '../imports/portfolio_images/IMG_4155.jpg.jpeg';
-import portfolio7 from '../imports/portfolio_images/MHPL6847.jpg.jpeg';
-import portfolio8 from '../imports/portfolio_images/MHPL7323.jpg.jpeg';
 
 export default function App() {
   const [splashVisible, setSplashVisible] = useState(true);
@@ -36,7 +28,15 @@ export default function App() {
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [billImageBase64, setBillImageBase64] = useState<string | null>(null);
+
+  const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+  const [uploadStep, setUploadStep] = useState('');
+  const [uploadError, setUploadError] = useState('');
   const billRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -45,7 +45,7 @@ export default function App() {
     location: '',
     message: ''
   });
-  const [formErrors, setFormErrors] = useState<Set<string>>(new Set());
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const { scrollY } = useScroll();
   const heroOpacity = useTransform(scrollY, [0, 300], [1, 0]);
@@ -380,51 +380,53 @@ ${selectedServicesList.map(service => `• ${service}`).join('\n')}
   };
 
   const handleDownloadPDF = async () => {
-    if (!billRef.current) return;
-
-    setIsGeneratingPDF(true);
-    toast.info('Generating PDF...');
-
     try {
-      const canvas = await html2canvas(billRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#0F0F0F',
-        logging: false,
-        allowTaint: true
-      });
-
-      const imgData = canvas.getImageData(0, 0, canvas.width, canvas.height);
-      const pdf = new jsPDF('p', 'mm', 'a4');
-
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 295; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-
-      let position = 0;
-
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+      const billElement = billRef.current;
+      if (!billElement) {
+        alert('Bill not found. Please generate bill first.');
+        return;
       }
 
-      const today = new Date();
-      const dateStr = today.getDate().toString().padStart(2, '0') +
-        (today.getMonth() + 1).toString().padStart(2, '0') +
-        today.getFullYear();
-      const filename = `HarshPhalke_Invoice_${customerName.replace(/\s+/g, '')}_${dateStr}.pdf`;
+      setIsGeneratingPDF(true);
+      toast.info('Generating PDF...');
 
-      pdf.save(filename);
+      const canvas = await html2canvas(billElement, {
+        scale: 2,
+        backgroundColor: '#0F0F0F',
+        useCORS: true,
+        allowTaint: true,
+        logging: false
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      
+      // Also save to state for WhatsApp upload
+      setBillImageBase64(imgData);
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+
+      pdf.addImage(imgData, 'JPEG', imgX, 0, imgWidth * ratio, imgHeight * ratio);
+
+      const clientName = customerName?.replace(/\s+/g, '_') || 'Client';
+      const today = new Date();
+      const dateStr = `${today.getDate()}${today.getMonth() + 1}${today.getFullYear()}`;
+      
+      pdf.save(`HarshPhalke_Invoice_${clientName}_${dateStr}.pdf`);
       toast.success('Invoice downloaded successfully!');
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error('Failed to generate PDF. Please try again.');
+      console.error('PDF generation error:', error);
+      toast.error('PDF generation failed. Please try again.');
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -444,6 +446,164 @@ ${selectedServicesList.map(service => `• ${service}`).join('\n')}
       handleDownloadPDF();
     }
   };
+
+
+
+  const validateBookingForm = () => {
+    const errors = new Set<string>();
+    if (!formData.fullName.trim()) errors.add('fullName');
+    if (!formData.phone.trim() || formData.phone.length < 10) errors.add('phone');
+    if (!formData.eventType) errors.add('eventType');
+    if (!formData.eventDate) errors.add('eventDate');
+    if (!formData.location.trim()) errors.add('location');
+
+    // Validate future date
+    if (formData.eventDate) {
+      const eventDate = new Date(formData.eventDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (eventDate <= today) {
+        errors.add('eventDate');
+      }
+    }
+
+    return errors;
+  };
+
+  const handleConfirmBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const errors: Record<string, string> = {};
+    if (!formData.fullName?.trim()) errors.fullName = 'Full name is required';
+    if (!formData.phone?.trim() || formData.phone.length < 10)
+      errors.phone = 'Valid 10-digit phone required';
+    if (!formData.eventType)
+      errors.eventType = 'Please select event type';
+    if (!formData.eventDate)
+      errors.eventDate = 'Event date is required';
+    if (!formData.location?.trim())
+      errors.location = 'Venue is required';
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
+    setFormErrors({});
+    setIsSubmitting(true);
+    setSubmitStatus('uploading');
+
+    try {
+      const today = new Date();
+      const day = String(today.getDate()).padStart(2, '0');
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const year = today.getFullYear();
+      const dateStr = `${day}${month}${year}`;
+      const clientName = formData.fullName.trim().replace(/\s+/g, '_');
+      const refNumber = Math.floor(Math.random() * 900) + 100;
+
+      // UPLOAD BILL
+      let billUrl = 'Bill not generated';
+      if (billImageBase64) {
+        setUploadStep('📄 Uploading invoice... please wait');
+        billUrl = await uploadToCloudinary(
+          billImageBase64,
+          `Bill_${clientName}_${dateStr}.jpg`
+        );
+      }
+
+      setUploadStep('📲 Opening WhatsApp...');
+
+      setUploadStep('📲 Opening WhatsApp...');
+
+      const bookingDate = today.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      });
+
+      const whatsappMessage = `🎬 *HARSH PHALKE FILMS & PHOTOGRAPHY*
+✨ _Premium Photography & Cinematography_
+📍 _Pune, Maharashtra_
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+🔔 *NEW BOOKING REQUEST*
+🗓️ _Date: ${bookingDate}_
+🆔 _Ref: HP-${year}-${refNumber}_
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+👤 *CLIENT DETAILS*
+🙍 *Name*    →  ${formData.fullName}
+� *CPhone*   →  +91 ${formData.phone}
+🎊 *Event*   →  ${formData.eventType}
+� **Date*    →  ${formData.eventDate}
+📍 *Venue*   →  ${formData.location}
+�  *Amount*  →  ₹${calculateTotal().toLocaleString()}
+� *Notees*   →  ${formData.message?.trim() || 'No special requests'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+📎 *ATTACHMENTS*
+🧾 *Invoice:*
+${billUrl}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ *ACTION REQUIRED*
+1️⃣  Review booking details
+2️⃣  Reply to client to confirm booking
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+💼 _Harsh Phalke Films & Photography_
+🌐 _harshphalkefilms.com_
+⚡ _Automated Booking System_`;
+
+      const encoded = encodeURIComponent(whatsappMessage);
+      window.open(`https://wa.me/917720049725?text=${encoded}`, '_blank');
+
+      setSubmitStatus('success');
+    } catch (error) {
+      console.error('Booking submission error:', error);
+      setSubmitStatus('error');
+      setUploadError(error instanceof Error
+        ? `Upload failed: ${error.message}`
+        : 'Upload failed. Check internet and try again.');
+    } finally {
+      setIsSubmitting(false);
+      setUploadStep('');
+    }
+  };
+
+  const resetBookingForm = () => {
+    setFormData({
+      fullName: '',
+      phone: '',
+      eventType: '',
+      eventDate: '',
+      location: '',
+      message: ''
+    });
+    setFormErrors({});
+    setBillImageBase64(null);
+    setBookingSuccess(false);
+    scrollToSection('services');
+  };
+
+  // Modal scroll behavior effects
+  useEffect(() => {
+    if (billPreview && modalRef.current) {
+      modalRef.current.scrollTop = 0;
+    }
+  }, [billPreview]);
+
+  useEffect(() => {
+    if (billPreview) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [billPreview]);
 
 
 
@@ -688,8 +848,8 @@ ${selectedServicesList.map(service => `• ${service}`).join('\n')}
                           setEventDurations(newDurations);
                         }}
                         className={`flex-1 py-1 px-2 text-xs rounded ${(eventDurations.get(event.id) || 'full') === 'full'
-                            ? 'bg-[#C9A84C] text-[#0A0A0A]'
-                            : 'bg-[#0A0A0A] text-[#888888]'
+                          ? 'bg-[#C9A84C] text-[#0A0A0A]'
+                          : 'bg-[#0A0A0A] text-[#888888]'
                           }`}
                       >
                         Full Day
@@ -702,8 +862,8 @@ ${selectedServicesList.map(service => `• ${service}`).join('\n')}
                           setEventDurations(newDurations);
                         }}
                         className={`flex-1 py-1 px-2 text-xs rounded ${eventDurations.get(event.id) === 'half'
-                            ? 'bg-[#C9A84C] text-[#0A0A0A]'
-                            : 'bg-[#0A0A0A] text-[#888888]'
+                          ? 'bg-[#C9A84C] text-[#0A0A0A]'
+                          : 'bg-[#0A0A0A] text-[#888888]'
                           }`}
                       >
                         Half Day
@@ -898,7 +1058,7 @@ ${selectedServicesList.map(service => `• ${service}`).join('\n')}
               <span>₹{calculateTotal().toLocaleString()}</span>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4 mt-8">
+            <div className="grid md:grid-cols-1 gap-4 mt-8">
               <motion.button
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
@@ -906,15 +1066,6 @@ ${selectedServicesList.map(service => `• ${service}`).join('\n')}
                 className="py-3 bg-[#C9A84C] text-[#0A0A0A] rounded-lg font-bold"
               >
                 Generate Bill
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={handlePrint}
-                className="py-3 border-2 border-[#C9A84C] text-[#C9A84C] rounded-lg font-bold flex items-center justify-center gap-2"
-              >
-                <Printer className="w-5 h-5" />
-                Print / Download
               </motion.button>
             </div>
           </motion.div>
@@ -951,7 +1102,7 @@ ${selectedServicesList.map(service => `• ${service}`).join('\n')}
 
           {/* WhatsApp Button */}
           <a
-            href="https://wa.me/917720049725?text=Hi%20Harsh%20Phalke%20Films%2C%20I%20have%20made%20the%20payment.%20Please%20find%20my%20screenshot%20attached."
+            href="https://wa.me/917720049725?text=Hi%20Harsh%20Phalke%20Films%2C%20I%20would%20like%20to%20book%20your%20services."
             target="_blank"
             rel="noopener noreferrer"
             className="btn-whatsapp"
@@ -982,7 +1133,7 @@ ${selectedServicesList.map(service => `• ${service}`).join('\n')}
                 -.231-.371A9.712 9.712 0 012.25 12C2.25 6.615 6.615 2.25 12 2.25
                 S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/>
             </svg>
-            Send Screenshot on WhatsApp
+            Contact on WhatsApp
           </a>
         </div>
       </section>
@@ -1003,127 +1154,508 @@ ${selectedServicesList.map(service => `• ${service}`).join('\n')}
             </h2>
           </motion.div>
 
-          <div className="bg-[#1E1E1E] p-8 rounded-lg">
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm text-[#CCCCCC] mb-2">Full Name *</label>
-                <input
-                  type="text"
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  className={`w-full bg-[#0A0A0A] border-2 ${formErrors.has('fullName') ? 'border-red-500' : 'border-[#C9A84C]/30'
-                    } focus:border-[#C9A84C] rounded-lg px-4 py-3 outline-none transition-colors`}
-                  placeholder="Enter your full name"
-                />
-                {formErrors.has('fullName') && (
-                  <p className="text-red-500 text-xs mt-1">This field is required</p>
+          {!bookingSuccess ? (
+            <div className="bg-[#1E1E1E] p-8 rounded-lg">
+              <div className="space-y-6">
+                {/* Full Name */}
+                <div>
+                  <label className="block text-sm text-[#CCCCCC] mb-2">Full Name *</label>
+                  <input
+                    type="text"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    className={`w-full bg-[#0A0A0A] border-2 ${!!formErrors.fullName ? 'border-red-500' : 'border-[#C9A84C]/30'
+                      } focus:border-[#C9A84C] rounded-lg px-4 py-3 outline-none transition-colors`}
+                    placeholder="Enter your full name"
+                  />
+                  {formErrors.fullName && (
+                    <p style={{
+                      color: '#ff4444',
+                      fontSize: '11px',
+                      marginTop: '4px',
+                      marginLeft: '2px',
+                      fontFamily: 'DM Sans, sans-serif'
+                    }}>
+                      ❌ {formErrors.fullName}
+                    </p>
+                  )}
+                  {!!formErrors.fullName && (
+                    <p className="text-red-500 text-xs mt-1">❌ This field is required</p>
+                  )}
+                </div>
+
+                {/* Phone Number */}
+                <div>
+                  <label className="block text-sm text-[#CCCCCC] mb-2">Phone Number *</label>
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className={`w-full bg-[#0A0A0A] border-2 ${formErrors.phone ? 'border-red-500' : 'border-[#C9A84C]/30'
+                      } focus:border-[#C9A84C] rounded-lg px-4 py-3 outline-none transition-colors`}
+                    placeholder="+91 XXXXX XXXXX"
+                  />
+                  {formErrors.phone && (
+                    <p style={{
+                      color: '#ff4444',
+                      fontSize: '11px',
+                      marginTop: '4px',
+                      marginLeft: '2px',
+                      fontFamily: 'DM Sans, sans-serif'
+                    }}>
+                      ❌ {formErrors.phone}
+                    </p>
+                  )}
+                </div>
+
+                {/* Event Type */}
+                <div>
+                  <label className="block text-sm text-[#CCCCCC] mb-2">Event Type *</label>
+                  <select
+                    value={formData.eventType}
+                    onChange={(e) => setFormData({ ...formData, eventType: e.target.value })}
+                    className={`w-full bg-[#0A0A0A] border-2 ${formErrors.eventType ? 'border-red-500' : 'border-[#C9A84C]/30'
+                      } focus:border-[#C9A84C] rounded-lg px-4 py-3 outline-none transition-colors`}
+                  >
+                    <option value="">Select event type</option>
+                    {[...eventCategories.priority, ...eventCategories.other].map(event => (
+                      <option key={event.id} value={event.name}>{event.name}</option>
+                    ))}
+                  </select>
+                  {formErrors.eventType && (
+                    <p style={{
+                      color: '#ff4444',
+                      fontSize: '11px',
+                      marginTop: '4px',
+                      marginLeft: '2px',
+                      fontFamily: 'DM Sans, sans-serif'
+                    }}>
+                      ❌ {formErrors.eventType}
+                    </p>
+                  )}
+                </div>
+
+                {/* Event Date */}
+                <div>
+                  <label className="block text-sm text-[#CCCCCC] mb-2">Event Date *</label>
+                  <input
+                    type="date"
+                    value={formData.eventDate}
+                    onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
+                    className={`w-full bg-[#0A0A0A] border-2 ${formErrors.eventDate ? 'border-red-500' : 'border-[#C9A84C]/30'
+                      } focus:border-[#C9A84C] rounded-lg px-4 py-3 outline-none transition-colors`}
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                  {formErrors.eventDate && (
+                    <p style={{
+                      color: '#ff4444',
+                      fontSize: '11px',
+                      marginTop: '4px',
+                      marginLeft: '2px',
+                      fontFamily: 'DM Sans, sans-serif'
+                    }}>
+                      ❌ {formErrors.eventDate}
+                    </p>
+                  )}
+                </div>
+
+                {/* Location / Venue */}
+                <div>
+                  <label className="block text-sm text-[#CCCCCC] mb-2">Location / Venue *</label>
+                  <input
+                    type="text"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    className={`w-full bg-[#0A0A0A] border-2 ${formErrors.location ? 'border-red-500' : 'border-[#C9A84C]/30'
+                      } focus:border-[#C9A84C] rounded-lg px-4 py-3 outline-none transition-colors`}
+                    placeholder="Enter venue or location"
+                  />
+                  {formErrors.location && (
+                    <p style={{
+                      color: '#ff4444',
+                      fontSize: '11px',
+                      marginTop: '4px',
+                      marginLeft: '2px',
+                      fontFamily: 'DM Sans, sans-serif'
+                    }}>
+                      ❌ {formErrors.location}
+                    </p>
+                  )}
+                </div>
+
+                {/* Total Amount */}
+                <div>
+                  <label className="block text-sm text-[#CCCCCC] mb-2">Total Amount</label>
+                  <input
+                    type="text"
+                    value={`₹${calculateTotal().toLocaleString()}`}
+                    readOnly
+                    className="w-full bg-[#0A0A0A] border-2 border-[#C9A84C] rounded-lg px-4 py-3 outline-none text-[#C9A84C] font-bold"
+                  />
+                </div>
+
+                {/* Generated Bill Preview */}
+                <div>
+                  <label className="block text-sm text-[#888888] mb-2">📄 Your Generated Bill (Auto-attached)</label>
+                  {billImageBase64 ? (
+                    <div style={{
+                      background: '#141414',
+                      border: '1px solid #C9A84C',
+                      borderRadius: '8px',
+                      padding: '12px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px'
+                    }}>
+                      <img
+                        src={billImageBase64}
+                        alt="Bill Preview"
+                        style={{
+                          width: '56px',
+                          height: '72px',
+                          objectFit: 'cover',
+                          borderRadius: '4px',
+                          border: '1px solid #2D2D2D'
+                        }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{
+                          fontSize: '12px',
+                          fontWeight: '500',
+                          color: 'white',
+                          marginBottom: '2px'
+                        }}>
+                          📎 Bill_HarshPhalke_{formData.fullName || 'Customer'}.jpg
+                        </div>
+                        <div style={{
+                          fontSize: '11px',
+                          color: '#4CAF50'
+                        }}>
+                          ✅ Auto-attached — ready to send
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const modal = document.createElement('div');
+                          modal.style.cssText = `
+                            position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+                            background: rgba(0,0,0,0.9); z-index: 9999; 
+                            display: flex; align-items: center; justify-content: center;
+                            padding: 20px;
+                          `;
+                          modal.innerHTML = `
+                            <div style="position: relative; max-width: 90%; max-height: 90%;">
+                              <img src="${billImageBase64}" style="max-width: 100%; max-height: 100%; border-radius: 8px;" />
+                              <button onclick="this.parentElement.parentElement.remove()" 
+                                style="position: absolute; top: -10px; right: -10px; 
+                                background: #C9A84C; color: black; border: none; 
+                                width: 30px; height: 30px; border-radius: 50%; 
+                                cursor: pointer; font-weight: bold;">×</button>
+                            </div>
+                          `;
+                          document.body.appendChild(modal);
+                        }}
+                        style={{
+                          background: 'transparent',
+                          border: '1px solid #C9A84C',
+                          color: '#C9A84C',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontSize: '10px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        👁️ Preview
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{
+                      background: '#0F0F0F',
+                      border: '2px dashed #2D2D2D',
+                      borderRadius: '8px',
+                      padding: '20px',
+                      textAlign: 'center'
+                    }}>
+                      <div style={{
+                        fontSize: '11px',
+                        color: '#888888',
+                        marginBottom: '8px'
+                      }}>
+                        ⚠️ No bill generated yet
+                      </div>
+                      <button
+                        onClick={() => scrollToSection('services')}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#C9A84C',
+                          fontSize: '11px',
+                          cursor: 'pointer',
+                          textDecoration: 'underline'
+                        }}
+                      >
+                        ← Go back and generate your bill first
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Message / Notes */}
+                <div>
+                  <label className="block text-sm text-[#CCCCCC] mb-2">Message / Notes</label>
+                  <textarea
+                    value={formData.message}
+                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                    className="w-full bg-[#0A0A0A] border-2 border-[#C9A84C]/30 focus:border-[#C9A84C] rounded-lg px-4 py-3 outline-none transition-colors h-24 resize-none"
+                    placeholder="Any special requirements or notes..."
+                  />
+                </div>
+
+                {/* Info Toast */}
+                <div style={{
+                  background: '#1A1A1A',
+                  border: '1px solid #C9A84C',
+                  borderRadius: '8px',
+                  padding: '12px 16px'
+                }}>
+                  <div style={{
+                    fontSize: '11px',
+                    color: '#C9A84C',
+                    lineHeight: '1.4'
+                  }}>
+                    📎 WhatsApp will open with your booking details. Please manually attach the downloaded bill in the chat.
+                  </div>
+                </div>
+
+                {/* Upload progress indicator */}
+                {isSubmitting && uploadStep && (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '12px',
+                    marginBottom: '12px',
+                    fontSize: '13px',
+                    color: '#C9A84C',
+                    fontStyle: 'italic',
+                    background: 'rgba(201,168,76,0.08)',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(201,168,76,0.2)'
+                  }}>
+                    ⏳ {uploadStep}
+                  </div>
+                )}
+
+                {/* Error message */}
+                {submitStatus === 'error' && uploadError && (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '12px 16px',
+                    marginBottom: '12px',
+                    fontSize: '13px',
+                    color: '#ff4444',
+                    background: 'rgba(255,68,68,0.08)',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255,68,68,0.2)'
+                  }}>
+                    ❌ {uploadError}
+                  </div>
+                )}
+
+                {/* Confirm Booking Button */}
+                {submitStatus !== 'success' && (
+                  <button
+                    onClick={handleConfirmBooking}
+                    disabled={isSubmitting}
+                    style={{
+                      width: '100%',
+                      background: isSubmitting ? '#8a7232' : '#C9A84C',
+                      color: '#000000',
+                      fontFamily: 'DM Sans, sans-serif',
+                      fontWeight: '700',
+                      fontSize: '15px',
+                      padding: '18px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                      opacity: isSubmitting ? 0.75 : 1,
+                      transition: 'all 0.2s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '10px'
+                    }}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <span style={{
+                          display: 'inline-block',
+                          width: '16px',
+                          height: '16px',
+                          border: '2px solid rgba(0,0,0,0.3)',
+                          borderTopColor: '#000',
+                          borderRadius: '50%',
+                          animation: 'spin 0.8s linear infinite'
+                        }} />
+                        Processing Booking...
+                      </>
+                    ) : (
+                      'Confirm Booking'
+                    )}
+                  </button>
+                )}
+
+                {/* Spin animation */}
+                <style>{`@keyframes spin {to { transform: rotate(360deg); }}`}</style>
+
+                {/* SUCCESS SCREEN */}
+                {submitStatus === 'success' && (
+                  <div style={{
+                    background: '#0F0F0F',
+                    border: '1px solid #C9A84C',
+                    borderRadius: '16px',
+                    padding: '40px',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontSize: '56px', marginBottom: '16px' }}>✅</div>
+                    <h3 style={{
+                      fontFamily: 'Playfair Display, serif',
+                      fontSize: '22px',
+                      color: '#ffffff',
+                      marginBottom: '8px'
+                    }}>Booking Sent Successfully!</h3>
+                    <p style={{
+                      fontSize: '13px',
+                      color: '#888888',
+                      marginBottom: '24px',
+                      lineHeight: '1.7'
+                    }}>
+                      Harsh received your booking details, invoice and payment proof on WhatsApp. He will confirm within 24 hours.
+                    </p>
+                    <div style={{
+                      background: '#141414',
+                      border: '1px solid #2D2D2D',
+                      borderRadius: '8px',
+                      padding: '16px 20px',
+                      textAlign: 'left',
+                      marginBottom: '24px',
+                      fontSize: '13px',
+                      lineHeight: '2.2'
+                    }}>
+                      <div><span style={{ color: '#888' }}>Event  : </span><span style={{ color: '#fff' }}>{formData.eventType}</span></div>
+                      <div><span style={{ color: '#888' }}>Date   : </span><span style={{ color: '#fff' }}>{formData.eventDate}</span></div>
+                      <div><span style={{ color: '#888' }}>Venue  : </span><span style={{ color: '#fff' }}>{formData.location}</span></div>
+                      <div><span style={{ color: '#888' }}>Amount : </span><span style={{ color: '#C9A84C', fontWeight: '700' }}>₹{calculateTotal().toLocaleString()}</span></div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSubmitStatus('idle');
+                        setFormData({
+                          fullName: '', phone: '', eventType: '',
+                          eventDate: '', location: '', message: ''
+                        });
+                        setUploadError('');
+                        setFormErrors({});
+                        setBillImageBase64(null);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: '1px solid #2D2D2D',
+                        color: '#888888',
+                        fontSize: '13px',
+                        padding: '12px 32px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontFamily: 'DM Sans, sans-serif'
+                      }}
+                    >
+                      Book Another Shoot
+                    </button>
+                  </div>
+                )}
+
+                {submitStatus === 'idle' && (
+                  <p className="text-center text-sm text-[#888888]">
+                    Or{' '}
+                    <a
+                      href="https://wa.me/917720049725"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#C9A84C] hover:underline"
+                    >
+                      WhatsApp us directly: +91 77200 49725
+                    </a>
+                  </p>
                 )}
               </div>
-
-              <div>
-                <label className="block text-sm text-[#CCCCCC] mb-2">Phone Number *</label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className={`w-full bg-[#0A0A0A] border-2 ${formErrors.has('phone') ? 'border-red-500' : 'border-[#C9A84C]/30'
-                    } focus:border-[#C9A84C] rounded-lg px-4 py-3 outline-none transition-colors`}
-                  placeholder="+91 XXXXX XXXXX"
-                />
-                {formErrors.has('phone') && (
-                  <p className="text-red-500 text-xs mt-1">This field is required</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm text-[#CCCCCC] mb-2">Event Type *</label>
-                <select
-                  value={formData.eventType}
-                  onChange={(e) => setFormData({ ...formData, eventType: e.target.value })}
-                  className={`w-full bg-[#0A0A0A] border-2 ${formErrors.has('eventType') ? 'border-red-500' : 'border-[#C9A84C]/30'
-                    } focus:border-[#C9A84C] rounded-lg px-4 py-3 outline-none transition-colors`}
-                >
-                  <option value="">Select event type</option>
-                  {[...eventCategories.priority, ...eventCategories.other].map(event => (
-                    <option key={event.id} value={event.name}>{event.name}</option>
-                  ))}
-                </select>
-                {formErrors.has('eventType') && (
-                  <p className="text-red-500 text-xs mt-1">This field is required</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm text-[#CCCCCC] mb-2">Event Date *</label>
-                <input
-                  type="date"
-                  value={formData.eventDate}
-                  onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
-                  className={`w-full bg-[#0A0A0A] border-2 ${formErrors.has('eventDate') ? 'border-red-500' : 'border-[#C9A84C]/30'
-                    } focus:border-[#C9A84C] rounded-lg px-4 py-3 outline-none transition-colors`}
-                />
-                {formErrors.has('eventDate') && (
-                  <p className="text-red-500 text-xs mt-1">This field is required</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm text-[#CCCCCC] mb-2">Location / Venue *</label>
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className={`w-full bg-[#0A0A0A] border-2 ${formErrors.has('location') ? 'border-red-500' : 'border-[#C9A84C]/30'
-                    } focus:border-[#C9A84C] rounded-lg px-4 py-3 outline-none transition-colors`}
-                  placeholder="Enter venue or location"
-                />
-                {formErrors.has('location') && (
-                  <p className="text-red-500 text-xs mt-1">This field is required</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm text-[#CCCCCC] mb-2">Total Amount</label>
-                <input
-                  type="text"
-                  value={`₹${calculateTotal().toLocaleString()}`}
-                  readOnly
-                  className="w-full bg-[#0A0A0A] border-2 border-[#C9A84C] rounded-lg px-4 py-3 outline-none text-[#C9A84C] font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-[#CCCCCC] mb-2">Message / Notes</label>
-                <textarea
-                  value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  className="w-full bg-[#0A0A0A] border-2 border-[#C9A84C]/30 focus:border-[#C9A84C] rounded-lg px-4 py-3 outline-none transition-colors h-24 resize-none"
-                  placeholder="Any special requirements or notes..."
-                />
-              </div>
-
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleBooking}
-                className="w-full py-4 bg-[#C9A84C] text-[#0A0A0A] rounded-full font-bold text-lg"
-              >
-                Confirm Booking
-              </motion.button>
-
-              <p className="text-center text-sm text-[#888888]">
-                Or{' '}
-                <a
-                  href="https://wa.me/917720049725"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#C9A84C] hover:underline"
-                >
-                  WhatsApp us directly: +91 77200 49725
-                </a>
-              </p>
             </div>
-          </div>
+          ) : (
+            /* Success State */
+            <div style={{
+              background: '#0F0F0F',
+              border: '1px solid #C9A84C',
+              borderRadius: '16px',
+              padding: '48px 40px',
+              textAlign: 'center'
+            }}>
+              <div style={{
+                fontSize: '64px',
+                color: '#4CAF50',
+                marginBottom: '24px'
+              }}>✅</div>
+
+              <h3 style={{
+                fontFamily: 'serif',
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: 'white',
+                marginBottom: '12px'
+              }}>
+                Booking Request Sent Successfully!
+              </h3>
+
+              <p style={{
+                fontSize: '13px',
+                color: '#888888',
+                marginBottom: '24px'
+              }}>
+                Harsh will confirm your booking within 24 hours on WhatsApp.
+              </p>
+
+              <div style={{
+                background: '#141414',
+                border: '1px solid #2D2D2D',
+                borderRadius: '8px',
+                padding: '16px 20px',
+                textAlign: 'left',
+                marginBottom: '24px'
+              }}>
+                <div style={{ fontSize: '12px', color: '#C9A84C', marginBottom: '8px' }}>
+                  Booking Summary:
+                </div>
+                <div style={{ fontSize: '12px', color: '#C9A84C', lineHeight: '1.6' }}>
+                  📋 {formData.eventType} · {formData.eventDate}<br />
+                  📍 {formData.location}<br />
+                  💰 ₹{calculateTotal().toLocaleString()}
+                </div>
+              </div>
+
+              <button
+                onClick={resetBookingForm}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid #C9A84C',
+                  color: '#C9A84C',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  padding: '12px 32px',
+                  borderRadius: '8px',
+                  cursor: 'pointer'
+                }}
+              >
+                Book Another Shoot
+              </button>
+            </div>
+          )}
         </div>
       </section>
 
@@ -1151,19 +1683,7 @@ ${selectedServicesList.map(service => `• ${service}`).join('\n')}
               whileHover={{ y: -5 }}
               className="bg-[#1E1E1E] p-8 rounded-lg text-center hover:bg-[#25D366]/10 transition-colors"
             >
-              <svg 
-                className="w-12 h-12 text-[#25D366] mx-auto mb-4" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              >
-                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a0 0 0 0 0 0 0Zm0 0a.5.5 0 0 0 1 0v1a.5.5 0 0 0-1 0v-1a0 0 0 0 0 0 0Zm5.5 3.5a.5.5 0 0 1-1 0v-1a.5.5 0 0 1 1 0v1a0 0 0 0 1 0 0Zm0 0a.5.5 0 0 1-1 0v1a.5.5 0 0 1 1 0v-1a0 0 0 0 1 0 0Z" />
-                <path d="M9 12.5c0 .83.67 1.5 1.5 1.5h3c.83 0 1.5-.67 1.5-1.5v-3c0-.83-.67-1.5-1.5-1.5h-3c-.83 0-1.5.67-1.5 1.5v3Z" />
-              </svg>
+              <Phone className="w-12 h-12 text-[#25D366] mx-auto mb-4" />
               <h3 className="font-bold mb-2">WhatsApp</h3>
               <p className="text-[#CCCCCC] text-sm">+91 77200 49725</p>
               <p className="text-[#888888] text-xs mt-2">Chat with us</p>
@@ -1192,20 +1712,6 @@ ${selectedServicesList.map(service => `• ${service}`).join('\n')}
               <p className="text-[#CCCCCC] text-sm">@HARSH_PHALKE_FILMS</p>
               <p className="text-[#888888] text-xs mt-2">Follow our work</p>
             </motion.a>
-          </div>
-
-          <div className="text-center mb-8">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              onClick={() => setQrZoom('instagram')}
-              className="inline-block cursor-pointer relative group"
-            >
-              <img src={instagramQR} alt="Instagram QR" className="w-48 h-auto mx-auto rounded-lg mb-4" />
-              <div className="absolute inset-0 bg-[#0A0A0A]/0 group-hover:bg-[#0A0A0A]/50 transition-colors rounded-lg flex items-center justify-center">
-                <ZoomIn className="w-8 h-8 text-[#C9A84C] opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <p className="text-xs text-[#888888] mt-2">Click to zoom</p>
-            </motion.div>
           </div>
 
           <div className="text-center space-y-2 text-[#CCCCCC]">
@@ -1663,175 +2169,420 @@ ${selectedServicesList.map(service => `• ${service}`).join('\n')}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setBillPreview(false)}
-            className="fixed inset-0 z-50 flex items-center justify-center p-6"
-            style={{ background: 'rgba(0,0,0,0.85)' }}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              overflow: 'hidden',
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'center',
+              padding: '40px 20px',
+              boxSizing: 'border-box',
+              zIndex: 1000,
+              background: 'rgba(0,0,0,0.85)'
+            }}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              ref={billRef}
-              className="invoice-modal"
+              ref={modalRef}
+              style={{
+                background: '#0F0F0F',
+                border: '1px solid #C9A84C',
+                borderRadius: '16px',
+                width: '100%',
+                maxWidth: '620px',
+                padding: '0',
+                boxShadow: '0 25px 80px rgba(0,0,0,0.8), 0 0 40px rgba(201,168,76,0.08)',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                maxHeight: '85vh',
+                height: 'auto',
+                scrollBehavior: 'smooth'
+              }}
             >
-              {/* Header Band */}
-              <div className="invoice-header">
-                <div className="invoice-header-content">
+              <div ref={billRef}>
+                {/* Header Band */}
+                <div style={{
+                  background: '#0A0A0A',
+                  padding: '32px 40px',
+                  borderBottom: '1px solid #2D2D2D',
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr 1fr',
+                  alignItems: 'start',
+                  gap: '20px'
+                }}>
                   {/* Left Column */}
-                  <div className="invoice-header-left">
-                    <Camera className="w-7 h-7 text-[#C9A84C] mb-2" />
-                    <div className="invoice-brand-name">HARSH PHALKE</div>
-                    <div className="invoice-brand-sub">PHOTO & FILMS</div>
-                    <div className="invoice-location">Pune, Maharashtra</div>
+                  <div>
+                    <Camera style={{ width: '28px', height: '28px', color: '#C9A84C', marginBottom: '8px' }} />
+                    <div style={{
+                      fontFamily: 'serif',
+                      fontWeight: 'bold',
+                      fontSize: '20px',
+                      color: 'white',
+                      lineHeight: '1.2'
+                    }}>HARSH PHALKE</div>
+                    <div style={{
+                      fontWeight: '500',
+                      fontSize: '10px',
+                      color: '#C9A84C',
+                      letterSpacing: '3px',
+                      marginBottom: '4px'
+                    }}>PHOTO & FILMS</div>
+                    <div style={{
+                      fontSize: '10px',
+                      color: '#888888'
+                    }}>Pune, Maharashtra</div>
                   </div>
 
                   {/* Center Column */}
-                  <div className="invoice-header-center">
-                    <div className="invoice-title">INVOICE</div>
-                    <div className="invoice-title-line"></div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{
+                      fontFamily: 'serif',
+                      fontWeight: '900',
+                      fontSize: '32px',
+                      color: 'white',
+                      marginBottom: '8px'
+                    }}>INVOICE</div>
+                    <div style={{
+                      width: '60px',
+                      height: '1px',
+                      background: '#C9A84C',
+                      margin: '0 auto'
+                    }}></div>
                   </div>
 
                   {/* Right Column */}
-                  <div className="invoice-header-right">
-                    <div className="invoice-meta-row">
-                      <span className="invoice-meta-label">Invoice No:</span>
-                      <span className="invoice-meta-value">{invoiceNumber}</span>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ marginBottom: '8px' }}>
+                      <div style={{ fontSize: '9px', color: '#888888' }}>Invoice No:</div>
+                      <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#C9A84C' }}>{invoiceNumber}</div>
                     </div>
-                    <div className="invoice-meta-row">
-                      <span className="invoice-meta-label">Date:</span>
-                      <span className="invoice-meta-date">{new Date().toLocaleDateString()}</span>
+                    <div style={{ marginBottom: '8px' }}>
+                      <div style={{ fontSize: '9px', color: '#888888' }}>Date:</div>
+                      <div style={{ fontSize: '11px', fontWeight: 'bold', color: 'white' }}>{new Date().toLocaleDateString()}</div>
                     </div>
-                    <div className="invoice-meta-row">
-                      <span className="invoice-meta-label">Customer:</span>
-                      <span className="invoice-meta-customer">{customerName}</span>
+                    <div>
+                      <div style={{ fontSize: '9px', color: '#888888' }}>Customer:</div>
+                      <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'white' }}>{customerName}</div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Gold Accent Strip */}
-              <div className="invoice-gold-strip"></div>
+                {/* Gold Accent Strip */}
+                <div style={{
+                  height: '3px',
+                  background: 'linear-gradient(to right, transparent, #C9A84C, #E8C96A, #C9A84C, transparent)',
+                  width: '100%'
+                }}></div>
 
-              {/* Bill Body */}
-              <div className="invoice-body">
-                {/* Events Section */}
-                {selectedEvents.size > 0 && (
-                  <div className="invoice-category">
-                    <div className="invoice-category-header">
-                      <div className="invoice-category-title">
-                        <span className="invoice-category-icon">🎉</span>
-                        <span className="invoice-category-name">EVENTS</span>
+                {/* Bill Body */}
+                <div style={{
+                  padding: '32px 40px',
+                  background: '#0F0F0F'
+                }}>
+                  {/* Events Section */}
+                  {selectedEvents.size > 0 && (
+                    <div style={{ marginBottom: '20px' }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginBottom: '8px',
+                        paddingBottom: '8px',
+                        borderBottom: '1px solid #1E1E1E'
+                      }}>
+                        <span style={{ fontSize: '14px' }}>🎉</span>
+                        <span style={{
+                          fontSize: '11px',
+                          fontWeight: 'bold',
+                          color: '#C9A84C',
+                          textTransform: 'uppercase',
+                          letterSpacing: '2px'
+                        }}>EVENTS</span>
                       </div>
+                      {Array.from(selectedEvents).map(eventId => {
+                        const event = [...eventCategories.priority, ...eventCategories.other].find(e => e.id === eventId);
+                        if (!event) return null;
+                        const duration = eventDurations.get(eventId) || 'full';
+                        const price = duration === 'full' ? event.price : event.price * 0.6;
+                        return (
+                          <div key={eventId} style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '8px 0',
+                            borderBottom: '1px dotted #1E1E1E'
+                          }}>
+                            <span style={{
+                              fontSize: '13px',
+                              color: '#E0E0E0'
+                            }}>
+                              {event.name} <span style={{ color: '#888888' }}>({duration === 'full' ? 'Full Day' : 'Half Day'})</span>
+                            </span>
+                            <span style={{
+                              fontSize: '13px',
+                              fontWeight: 'bold',
+                              color: 'white'
+                            }}>₹{price.toLocaleString()}</span>
+                          </div>
+                        );
+                      })}
                     </div>
-                    {Array.from(selectedEvents).map(eventId => {
-                      const event = [...eventCategories.priority, ...eventCategories.other].find(e => e.id === eventId);
-                      if (!event) return null;
-                      const duration = eventDurations.get(eventId) || 'full';
-                      const price = duration === 'full' ? event.price : event.price * 0.6;
-                      return (
-                        <div key={eventId} className="invoice-line-item">
-                          <span className="invoice-service-name">
-                            {event.name} <span className="invoice-duration">({duration === 'full' ? 'Full Day' : 'Half Day'})</span>
-                          </span>
-                          <span className="invoice-service-price">₹{price.toLocaleString()}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                  )}
 
-                {/* Album Section */}
-                <div className="invoice-category">
-                  <div className="invoice-category-header">
-                    <div className="invoice-category-title">
-                      <span className="invoice-category-icon">📖</span>
-                      <span className="invoice-category-name">ALBUM</span>
+                  {/* Album Section */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginBottom: '8px',
+                      paddingBottom: '8px',
+                      borderBottom: '1px solid #1E1E1E'
+                    }}>
+                      <span style={{ fontSize: '14px' }}>📖</span>
+                      <span style={{
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        color: '#C9A84C',
+                        textTransform: 'uppercase',
+                        letterSpacing: '2px'
+                      }}>ALBUM</span>
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '8px 0',
+                      borderBottom: '1px dotted #1E1E1E'
+                    }}>
+                      <span style={{
+                        fontSize: '13px',
+                        color: '#E0E0E0'
+                      }}>
+                        {albumType === 'small' ? '8×24 Small' : '12×36 Large'} Album ({albumPages} pages)
+                      </span>
+                      <span style={{
+                        fontSize: '13px',
+                        fontWeight: 'bold',
+                        color: 'white'
+                      }}>
+                        ₹{((albumPages * (albumType === 'small' ? 70 : 100)) + (albumType === 'small' ? 500 : 700)).toLocaleString()}
+                      </span>
                     </div>
                   </div>
-                  <div className="invoice-line-item">
-                    <span className="invoice-service-name">
-                      {albumType === 'small' ? '8×24 Small' : '12×36 Large'} Album ({albumPages} pages)
-                    </span>
-                    <span className="invoice-service-price">
-                      ₹{((albumPages * (albumType === 'small' ? 70 : 100)) + (albumType === 'small' ? 500 : 700)).toLocaleString()}
-                    </span>
-                  </div>
-                </div>
 
-                {/* Add-ons Section */}
-                {addons.size > 0 && (
-                  <div className="invoice-category">
-                    <div className="invoice-category-header">
-                      <div className="invoice-category-title">
-                        <span className="invoice-category-icon">✨</span>
-                        <span className="invoice-category-name">ADD-ONS</span>
+                  {/* Add-ons Section */}
+                  {addons.size > 0 && (
+                    <div style={{ marginBottom: '20px' }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginBottom: '8px',
+                        paddingBottom: '8px',
+                        borderBottom: '1px solid #1E1E1E'
+                      }}>
+                        <span style={{ fontSize: '14px' }}>✨</span>
+                        <span style={{
+                          fontSize: '11px',
+                          fontWeight: 'bold',
+                          color: '#C9A84C',
+                          textTransform: 'uppercase',
+                          letterSpacing: '2px'
+                        }}>ADD-ONS</span>
                       </div>
+                      {Array.from(addons).map(addonId => {
+                        const addon = addonServices.find(a => a.id === addonId);
+                        if (!addon) return null;
+                        return (
+                          <div key={addonId} style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '8px 0',
+                            borderBottom: '1px dotted #1E1E1E'
+                          }}>
+                            <span style={{
+                              fontSize: '13px',
+                              color: '#E0E0E0'
+                            }}>{addon.name}</span>
+                            <span style={{
+                              fontSize: '13px',
+                              fontWeight: 'bold',
+                              color: 'white'
+                            }}>₹{addon.price.toLocaleString()}</span>
+                          </div>
+                        );
+                      })}
                     </div>
-                    {Array.from(addons).map(addonId => {
-                      const addon = addonServices.find(a => a.id === addonId);
-                      if (!addon) return null;
-                      return (
-                        <div key={addonId} className="invoice-line-item">
-                          <span className="invoice-service-name">{addon.name}</span>
-                          <span className="invoice-service-price">₹{addon.price.toLocaleString()}</span>
-                        </div>
-                      );
-                    })}
+                  )}
+
+                  {/* No Services Message */}
+                  {selectedEvents.size === 0 && addons.size === 0 && (
+                    <div style={{
+                      textAlign: 'center',
+                      fontSize: '13px',
+                      fontStyle: 'italic',
+                      color: '#555555',
+                      padding: '40px 0'
+                    }}>
+                      No services selected yet.
+                    </div>
+                  )}
+                </div>
+
+                {/* Subtotal Area */}
+                <div style={{
+                  background: '#141414',
+                  borderTop: '1px solid #2D2D2D',
+                  padding: '20px 40px'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: '12px',
+                    color: '#888888'
+                  }}>
+                    <span>Subtotal</span>
+                    <span>₹{calculateTotal().toLocaleString()}</span>
                   </div>
-                )}
+                </div>
 
-                {/* No Services Message */}
-                {selectedEvents.size === 0 && addons.size === 0 && (
-                  <div className="invoice-no-services">
-                    No services selected yet.
+                {/* Total Band */}
+                <div style={{
+                  background: 'linear-gradient(135deg, #1A1500, rgba(201,168,76,0.13))',
+                  borderTop: '2px solid #C9A84C',
+                  borderBottom: '2px solid #C9A84C',
+                  padding: '20px 40px'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <span style={{
+                      fontSize: '14px',
+                      fontWeight: '900',
+                      color: 'white',
+                      letterSpacing: '2px'
+                    }}>TOTAL INVESTMENT</span>
+                    <span style={{
+                      fontFamily: 'serif',
+                      fontSize: '28px',
+                      fontWeight: 'bold',
+                      color: '#C9A84C'
+                    }}>₹{calculateTotal().toLocaleString()}</span>
                   </div>
-                )}
-              </div>
-
-              {/* Subtotal Area */}
-              <div className="invoice-subtotal">
-                <div className="invoice-subtotal-row">
-                  <span>Subtotal</span>
-                  <span>₹{calculateTotal().toLocaleString()}</span>
                 </div>
-              </div>
 
-              {/* Total Band */}
-              <div className="invoice-total-band">
-                <div className="invoice-total-content">
-                  <span className="invoice-total-label">TOTAL INVESTMENT</span>
-                  <span className="invoice-total-amount">₹{calculateTotal().toLocaleString()}</span>
+                {/* Thank You Row */}
+                <div style={{
+                  padding: '16px 40px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{
+                    fontFamily: 'serif',
+                    fontSize: '13px',
+                    fontStyle: 'italic',
+                    color: '#888888',
+                    marginBottom: '8px'
+                  }}>
+                    Thank you for choosing Harsh Phalke Films & Photography!
+                  </div>
+                  <div style={{
+                    fontSize: '10px',
+                    color: '#C9A84C',
+                    letterSpacing: '4px'
+                  }}>✦ ✦ ✦</div>
                 </div>
-              </div>
 
-              {/* Thank You Row */}
-              <div className="invoice-thank-you">
-                <div className="invoice-thank-you-text">
-                  Thank you for choosing Harsh Phalke Films & Photography!
+                {/* Terms Strip */}
+                <div style={{
+                  background: '#080808',
+                  padding: '14px 40px',
+                  borderTop: '1px solid #1E1E1E',
+                  textAlign: 'center'
+                }}>
+                  <div style={{
+                    fontSize: '8px',
+                    color: '#555555',
+                    lineHeight: '1.4'
+                  }}>
+                    Terms: 50% advance non-refundable · Balance due on shoot day · RAW files not shared · Travel charges extra if applicable
+                  </div>
                 </div>
-                <div className="invoice-stars">✦ ✦ ✦</div>
-              </div>
 
-              {/* Terms Strip */}
-              <div className="invoice-terms">
-                Terms: 50% advance non-refundable · Balance due on shoot day · RAW files not shared · Travel charges extra if applicable
-              </div>
-
-              {/* Footer Buttons */}
-              <div className="invoice-footer">
-                <button
-                  onClick={() => setBillPreview(false)}
-                  className="invoice-btn-back"
-                >
-                  ← Back / Edit
-                </button>
-                <button
-                  onClick={handleDownloadPDF}
-                  disabled={isGeneratingPDF}
-                  className="invoice-btn-download"
-                >
-                  {isGeneratingPDF ? '⏳ Generating PDF...' : '⬇ Download Invoice'}
-                </button>
+                {/* Footer Buttons Row */}
+                <div style={{
+                  padding: '24px 40px',
+                  background: '#0A0A0A',
+                  borderTop: '1px solid #2D2D2D',
+                  display: 'flex',
+                  gap: '16px'
+                }}>
+                  <button
+                    onClick={() => setBillPreview(false)}
+                    style={{
+                      flex: '1',
+                      background: 'transparent',
+                      border: '1px solid #2D2D2D',
+                      color: '#888888',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      padding: '14px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.borderColor = '#C9A84C';
+                      e.target.style.color = '#C9A84C';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.borderColor = '#2D2D2D';
+                      e.target.style.color = '#888888';
+                    }}
+                  >
+                    ← Back / Edit
+                  </button>
+                  <button
+                    onClick={handleDownloadPDF}
+                    disabled={isGeneratingPDF}
+                    style={{
+                      flex: '2',
+                      background: isGeneratingPDF ? '#B8954A' : '#C9A84C',
+                      color: '#000000',
+                      fontSize: '14px',
+                      fontWeight: 'bold',
+                      padding: '14px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      cursor: isGeneratingPDF ? 'not-allowed' : 'pointer',
+                      opacity: isGeneratingPDF ? 0.7 : 1,
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isGeneratingPDF) {
+                        e.target.style.background = '#E8C96A';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isGeneratingPDF) {
+                        e.target.style.background = '#C9A84C';
+                      }
+                    }}
+                  >
+                    {isGeneratingPDF ? '⏳ Generating PDF...' : '⬇ Download Invoice'}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
