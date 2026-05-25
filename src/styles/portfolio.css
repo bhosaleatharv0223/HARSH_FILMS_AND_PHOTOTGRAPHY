@@ -1,0 +1,396 @@
+/* 🖼️ PREMIUM PORTFOLIO GALLERY STYLES */
+
+/* Portfolio Item Container */
+.portfolio-item {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #0A0A0A;
+}
+
+/* Portfolio Image */
+.portfolio-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  z-index: 2;
+}
+
+/* Hover: Image Scale */
+.portfolio-item:hover .portfolio-image {
+  transform: scale(1.06);
+}
+
+/* Dark Gradient Overlay */
+.portfolio-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.78) 0%,
+    rgba(0, 0, 0, 0.1) 55%,
+    transparent 100%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+
+.portfolio-item:hover .portfolio-overlay {
+  opacity: 1;
+}
+
+/* Gold Shimmer Sweep */
+.portfolio-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    120deg,
+    transparent 30%,
+    rgba(212, 175, 55, 0.2) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  transition: transform 0.7s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.portfolio-item:hover::before {
+  transform: translateX(200%);
+}
+
+/* Gold Border on Hover */
+.portfolio-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0);
+  transition: box-shadow 0.3s ease;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.portfolio-item:hover::after {
+  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.5);
+}
+
+/* Caption */
+.portfolio-caption {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  font-family: 'Cormorant Garamond', 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: #c9a84c;
+  letter-spacing: 0.12em;
+  transform: translateY(20px);
+  opacity: 0;
+  transition: transform 0.35s ease 0.1s, opacity 0.35s ease 0.1s;
+  z-index: 4;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.portfolio-item:hover .portfolio-caption {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Skeleton Loading Shimmer */
+.portfolio-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    #0A0A0A 0%,
+    #1E1E1E 50%,
+    #0A0A0A 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmerLoading 1.5s ease-in-out infinite;
+  z-index: 1;
+  pointer-events: none;
+}
+
+@keyframes shimmerLoading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Image should be above shimmer */
+.portfolio-image {
+  position: relative;
+  z-index: 2;
+}
+
+/* Instagram Button Ripple Effect */
+.portfolio-instagram-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.portfolio-instagram-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.portfolio-instagram-btn:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* 🔍 LIGHTBOX FULLSCREEN VIEWER */
+
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.96);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.lightbox-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 90vw;
+  max-height: 85vh;
+}
+
+.lightbox-image {
+  max-width: 90vw;
+  max-height: 75vh;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.lightbox-caption {
+  margin-top: 1.5rem;
+  font-family: 'Cormorant Garamond', 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 15px;
+  color: #c9a84c;
+  letter-spacing: 0.12em;
+  text-align: center;
+}
+
+/* Close Button */
+.lightbox-close {
+  position: fixed;
+  top: 2rem;
+  right: 2rem;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  border-radius: 50%;
+  background: transparent;
+  color: #c9a84c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.3s ease, color 0.3s ease;
+  z-index: 10;
+}
+
+.lightbox-close:hover {
+  background: rgba(212, 175, 55, 0.15);
+  color: #F5F0E8;
+}
+
+/* Navigation Arrows */
+.lightbox-arrow {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  border-radius: 50%;
+  background: transparent;
+  color: #c9a84c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.3s ease, color 0.3s ease;
+  z-index: 10;
+}
+
+.lightbox-arrow:hover {
+  background: rgba(212, 175, 55, 0.15);
+  color: #F5F0E8;
+}
+
+.lightbox-arrow-left {
+  left: 2rem;
+}
+
+.lightbox-arrow-right {
+  right: 2rem;
+}
+
+/* Photo Counter */
+.lightbox-counter {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.1em;
+  z-index: 10;
+}
+
+/* 📱 RESPONSIVE BEHAVIOR */
+
+/* Tablet */
+@media (max-width: 1024px) and (min-width: 768px) {
+  .portfolio-item[style*="280px"] {
+    height: 240px !important;
+  }
+  
+  .portfolio-item[style*="380px"] {
+    height: 320px !important;
+  }
+  
+  .portfolio-item[style*="300px"] {
+    height: 260px !important;
+  }
+  
+  .portfolio-item[style*="400px"] {
+    height: 340px !important;
+  }
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+  .portfolio-item[style*="280px"],
+  .portfolio-item[style*="380px"],
+  .portfolio-item[style*="300px"] {
+    height: 280px !important;
+  }
+  
+  .portfolio-item[style*="400px"] {
+    height: 360px !important;
+    max-width: 100% !important;
+  }
+  
+  .portfolio-caption {
+    font-size: 12px;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+  }
+  
+  .lightbox-overlay {
+    padding: 1rem;
+  }
+  
+  .lightbox-image {
+    max-width: 95vw;
+    max-height: 70vh;
+  }
+  
+  .lightbox-arrow {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .lightbox-arrow-left {
+    left: 1rem;
+  }
+  
+  .lightbox-arrow-right {
+    right: 1rem;
+  }
+  
+  .lightbox-close {
+    top: 1rem;
+    right: 1rem;
+    width: 40px;
+    height: 40px;
+  }
+  
+  .lightbox-counter {
+    bottom: 1rem;
+    font-size: 12px;
+  }
+  
+  .lightbox-caption {
+    font-size: 13px;
+    margin-top: 1rem;
+  }
+}
+
+/* Touch Swipe Support for Mobile */
+@media (max-width: 767px) {
+  .lightbox-content {
+    touch-action: pan-x;
+  }
+}
+
+/* ♿ ACCESSIBILITY: Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-image,
+  .portfolio-overlay,
+  .portfolio-caption,
+  .portfolio-item::before,
+  .portfolio-item::after {
+    transition: none !important;
+  }
+  
+  .portfolio-item:hover .portfolio-image {
+    transform: none;
+  }
+  
+  .portfolio-item:hover::before {
+    transform: translateX(-100%);
+  }
+  
+  .portfolio-caption {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .lightbox-image {
+    animation: none !important;
+  }
+}
+
+/* Focus Styles for Accessibility */
+.portfolio-item:focus-visible,
+.lightbox-arrow:focus-visible,
+.lightbox-close:focus-visible {
+  outline: 2px solid #c9a84c;
+  outline-offset: 2px;
+}

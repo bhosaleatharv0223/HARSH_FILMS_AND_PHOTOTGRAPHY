@@ -1,13 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react';
-import { Camera, Phone, Instagram, Mail, MapPin, ChevronDown, Check, X, Menu, ZoomIn, CheckCircle, Printer, Download } from 'lucide-react';
+import { Camera, Phone, Instagram, Mail, MapPin, ChevronDown, Check, X, Menu, ZoomIn, CheckCircle, Printer, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import phonepeQR from '../imports/WhatsApp_Image_2026-05-22_at_10.00.08_PM.jpeg';
 import instagramQR from '../imports/WhatsApp_Image_2026-05-22_at_10.00.07_PM.jpeg';
+import logo from '../imports/Logo.jpeg';
+import portfolio1 from '../imports/portfolio_images/3G0A8995.jpg.jpeg';
+import portfolio2 from '../imports/portfolio_images/3G0A9004.jpg.jpeg';
+import portfolio3 from '../imports/portfolio_images/3G0A9159.jpg.jpeg';
+import portfolio4 from '../imports/portfolio_images/3G0A9338.jpg.jpeg';
+import portfolio5 from '../imports/portfolio_images/IMG_4147.jpg.jpeg';
+import portfolio6 from '../imports/portfolio_images/IMG_4155.jpg.jpeg';
+import portfolio7 from '../imports/portfolio_images/MHPL6847.jpg.jpeg';
+import portfolio8 from '../imports/portfolio_images/MHPL7323.jpg.jpeg';
 
 export default function App() {
+  const [splashVisible, setSplashVisible] = useState(true);
+  const [siteLoaded, setSiteLoaded] = useState(false);
   const [selectedEvents, setSelectedEvents] = useState<Set<string>>(new Set());
   const [eventDurations, setEventDurations] = useState<Map<string, 'full' | 'half'>>(new Map());
   const [albumType, setAlbumType] = useState<'small' | 'large'>('small');
@@ -17,6 +28,8 @@ export default function App() {
   const [expandedTerm, setExpandedTerm] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [portfolioOpen, setPortfolioOpen] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [expandedAbout, setExpandedAbout] = useState<number | null>(null);
   const [qrZoom, setQrZoom] = useState<'phonepe' | 'instagram' | null>(null);
   const [billPreview, setBillPreview] = useState(false);
@@ -36,6 +49,109 @@ export default function App() {
 
   const { scrollY } = useScroll();
   const heroOpacity = useTransform(scrollY, [0, 300], [1, 0]);
+
+  // Splash screen effect
+  useEffect(() => {
+    // Check for reduced motion preference
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    
+    if (prefersReducedMotion) {
+      // Skip animations for accessibility
+      setTimeout(() => {
+        setSplashVisible(false);
+        setSiteLoaded(true);
+        document.body.style.overflow = 'auto';
+      }, 500);
+    } else {
+      // Normal cinematic sequence
+      document.body.style.overflow = 'hidden';
+      
+      setTimeout(() => {
+        setSplashVisible(false);
+        setSiteLoaded(true);
+        document.body.style.overflow = 'auto';
+      }, 3000);
+    }
+  }, []);
+
+  // Portfolio images data
+  const portfolioImages = [
+    { src: portfolio1, alt: 'Cinematic Wedding Photography', caption: 'Timeless Wedding Moments' },
+    { src: portfolio2, alt: 'Pre-Wedding Shoot', caption: 'Love Story Captured' },
+    { src: portfolio3, alt: 'Engagement Photography', caption: 'Celebration of Love' },
+    { src: portfolio4, alt: 'Traditional Wedding', caption: 'Cultural Heritage' },
+    { src: portfolio5, alt: 'Couple Portrait', caption: 'Intimate Moments' },
+    { src: portfolio6, alt: 'Destination Wedding', caption: 'Scenic Celebrations' },
+    { src: portfolio7, alt: 'Candid Photography', caption: 'Natural Emotions' },
+    { src: portfolio8, alt: 'Cinematic Videography', caption: 'Stories in Motion' }
+  ];
+
+  // Lightbox navigation
+  const openLightbox = (index: number) => {
+    setCurrentPhotoIndex(index);
+    setLightboxOpen(true);
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+    document.body.style.overflow = 'auto';
+  };
+
+  const nextPhoto = () => {
+    setCurrentPhotoIndex((prev) => (prev + 1) % portfolioImages.length);
+  };
+
+  const prevPhoto = () => {
+    setCurrentPhotoIndex((prev) => (prev - 1 + portfolioImages.length) % portfolioImages.length);
+  };
+
+  // Keyboard navigation for lightbox
+  useEffect(() => {
+    if (!lightboxOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') prevPhoto();
+      if (e.key === 'ArrowRight') nextPhoto();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxOpen]);
+
+  // Touch swipe support for mobile
+  useEffect(() => {
+    if (!lightboxOpen) return;
+
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX = e.changedTouches[0].screenX;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      touchEndX = e.changedTouches[0].screenX;
+      const deltaX = touchEndX - touchStartX;
+      
+      if (Math.abs(deltaX) > 50) {
+        if (deltaX > 0) {
+          prevPhoto();
+        } else {
+          nextPhoto();
+        }
+      }
+    };
+
+    window.addEventListener('touchstart', handleTouchStart);
+    window.addEventListener('touchend', handleTouchEnd);
+    
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [lightboxOpen]);
 
   const eventCategories = {
     priority: [
@@ -162,8 +278,11 @@ export default function App() {
   };
 
   const scrollToSection = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    setPortfolioOpen(false);
     setMobileMenuOpen(false);
+    setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
   };
 
   const validateForm = () => {
@@ -329,7 +448,52 @@ ${selectedServicesList.map(service => `• ${service}`).join('\n')}
 
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-[#F5F0E8]" style={{ fontFamily: 'var(--font-body)' }}>
+    <>
+      {/* Cinematic Splash Screen */}
+      {splashVisible && (
+        <div id="splash-screen" className="splash-screen">
+          {/* Vignette Overlay */}
+          <div className="splash-vignette" />
+          
+          {/* Filmstrip Bars */}
+          <div className="filmstrip-bar filmstrip-top" />
+          <div className="filmstrip-bar filmstrip-bottom" />
+          
+          {/* Floating Dust Particles */}
+          {Array.from({ length: 18 }).map((_, i) => (
+            <div
+              key={i}
+              className="dust-particle"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                width: `${2 + Math.random() * 2}px`,
+                height: `${2 + Math.random() * 2}px`,
+                opacity: 0.25 + Math.random() * 0.3,
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${2 + Math.random()}s`
+              }}
+            />
+          ))}
+          
+          {/* Logo Container with Shimmer */}
+          <div className="splash-logo-wrapper">
+            <div className="splash-shimmer" />
+            <img 
+              src={logo} 
+              alt="Harsh Phalke Photography" 
+              className="splash-logo"
+            />
+          </div>
+          
+          {/* Tagline */}
+          <div className="splash-tagline">
+            Stories Today. Memories Forever.
+          </div>
+        </div>
+      )}
+
+      <div className={`min-h-screen bg-[#0A0A0A] text-[#F5F0E8] ${siteLoaded ? 'site-loaded' : ''}`} style={{ fontFamily: 'var(--font-body)' }}>
       <Toaster position="top-center" theme="dark" toastOptions={{ style: { background: '#1E1E1E', color: '#F5F0E8', border: '1px solid #C9A84C' } }} />
 
       {/* Navigation */}
@@ -338,18 +502,16 @@ ${selectedServicesList.map(service => `• ${service}`).join('\n')}
         animate={{ y: 0 }}
         className="fixed top-0 left-0 right-0 z-50 bg-[#0A0A0A]/90 backdrop-blur-md border-b border-[#C9A84C]/20"
       >
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
           <button
             onClick={() => scrollToSection('home')}
-            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+            className="hover:opacity-80 transition-opacity"
           >
-            <Camera className="w-8 h-8 text-[#C9A84C]" />
-            <div>
-              <div className="font-bold tracking-wider" style={{ fontFamily: 'var(--font-display)' }}>
-                HARSH PHALKE
-              </div>
-              <div className="text-xs tracking-widest text-[#C9A84C]">PHOTO & FILMS</div>
-            </div>
+            <img 
+              src={logo} 
+              alt="Harsh Phalke Photography Logo" 
+              className="h-20 md:h-24 w-auto object-contain"
+            />
           </button>
           <div className="hidden md:flex gap-8 text-sm">
             {['Home', 'About', 'Services', 'Contact'].map(item => (
@@ -989,7 +1151,19 @@ ${selectedServicesList.map(service => `• ${service}`).join('\n')}
               whileHover={{ y: -5 }}
               className="bg-[#1E1E1E] p-8 rounded-lg text-center hover:bg-[#25D366]/10 transition-colors"
             >
-              <Phone className="w-12 h-12 text-[#25D366] mx-auto mb-4" />
+              <svg 
+                className="w-12 h-12 text-[#25D366] mx-auto mb-4" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a0 0 0 0 0 0 0Zm0 0a.5.5 0 0 0 1 0v1a.5.5 0 0 0-1 0v-1a0 0 0 0 0 0 0Zm5.5 3.5a.5.5 0 0 1-1 0v-1a.5.5 0 0 1 1 0v1a0 0 0 0 1 0 0Zm0 0a.5.5 0 0 1-1 0v1a.5.5 0 0 1 1 0v-1a0 0 0 0 1 0 0Z" />
+                <path d="M9 12.5c0 .83.67 1.5 1.5 1.5h3c.83 0 1.5-.67 1.5-1.5v-3c0-.83-.67-1.5-1.5-1.5h-3c-.83 0-1.5.67-1.5 1.5v3Z" />
+              </svg>
               <h3 className="font-bold mb-2">WhatsApp</h3>
               <p className="text-[#CCCCCC] text-sm">+91 77200 49725</p>
               <p className="text-[#888888] text-xs mt-2">Chat with us</p>
@@ -1175,44 +1349,235 @@ ${selectedServicesList.map(service => `• ${service}`).join('\n')}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setPortfolioOpen(false)}
-            className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+            className="fixed inset-0 bg-black/90 backdrop-blur-sm z-40 flex items-start justify-center overflow-y-auto"
+            style={{ paddingTop: '140px', paddingLeft: '1rem', paddingRight: '1rem', paddingBottom: '2rem' }}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
+              initial={{ scale: 0.94, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+              exit={{ scale: 0.94, opacity: 0 }}
+              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-[#1E1E1E] rounded-lg p-8 max-w-2xl w-full relative"
+              className="bg-[#1E1E1E] rounded-lg p-6 md:p-8 max-w-6xl w-full relative mb-8"
             >
               <button
                 onClick={() => setPortfolioOpen(false)}
-                className="absolute top-4 right-4 text-[#C9A84C] hover:text-[#F5F0E8]"
+                className="absolute top-4 right-4 text-[#C9A84C] hover:text-[#F5F0E8] transition-colors z-10"
               >
                 <X className="w-6 h-6" />
               </button>
-              <h2 className="text-3xl mb-6" style={{ fontFamily: 'var(--font-display)' }}>
+              
+              <motion.h2 
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="text-3xl md:text-4xl mb-3" 
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
                 Our Portfolio
-              </h2>
-              <p className="text-[#CCCCCC] mb-6">
-                Explore our collection of cinematic photography and videography work. Visit our Instagram to see our latest projects and client testimonials.
-              </p>
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="aspect-square bg-[#0A0A0A] rounded-lg flex items-center justify-center">
-                    <Camera className="w-12 h-12 text-[#C9A84C]/30" />
-                  </div>
-                ))}
+              </motion.h2>
+              
+              <motion.p 
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="text-[#CCCCCC] mb-8"
+              >
+                Explore our collection of cinematic photography and videography work.
+              </motion.p>
+              
+              {/* Premium Masonry Gallery Grid */}
+              <div className="portfolio-gallery mb-8">
+                {/* Row 1: 2 large landscape photos */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-[10px] mb-[10px]">
+                  {portfolioImages.slice(0, 2).map((image, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ y: 40, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ 
+                        duration: 0.6, 
+                        delay: 0.2 + (index * 0.08),
+                        ease: [0.22, 1, 0.36, 1]
+                      }}
+                      className="portfolio-item"
+                      onClick={() => openLightbox(index)}
+                      style={{ height: '280px' }}
+                    >
+                      <img 
+                        src={image.src} 
+                        alt={image.alt}
+                        loading="eager"
+                        className="portfolio-image"
+                        style={{ objectPosition: 'center 30%' }}
+                      />
+                      <div className="portfolio-shimmer" />
+                      <div className="portfolio-overlay" />
+                    </motion.div>
+                  ))}
+                </div>
+                
+                {/* Row 2: 2 portrait photos */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-[10px] mb-[10px]">
+                  {portfolioImages.slice(2, 4).map((image, index) => (
+                    <motion.div
+                      key={index + 2}
+                      initial={{ y: 40, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ 
+                        duration: 0.6, 
+                        delay: 0.2 + ((index + 2) * 0.08),
+                        ease: [0.22, 1, 0.36, 1]
+                      }}
+                      className="portfolio-item"
+                      onClick={() => openLightbox(index + 2)}
+                      style={{ height: '380px' }}
+                    >
+                      <img 
+                        src={image.src} 
+                        alt={image.alt}
+                        loading="eager"
+                        className="portfolio-image"
+                      />
+                      <div className="portfolio-shimmer" />
+                      <div className="portfolio-overlay" />
+                    </motion.div>
+                  ))}
+                </div>
+                
+                {/* Row 3: 3 mixed photos */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-[10px] mb-[10px]">
+                  {portfolioImages.slice(4, 7).map((image, index) => (
+                    <motion.div
+                      key={index + 4}
+                      initial={{ y: 40, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ 
+                        duration: 0.6, 
+                        delay: 0.2 + ((index + 4) * 0.08),
+                        ease: [0.22, 1, 0.36, 1]
+                      }}
+                      className="portfolio-item"
+                      onClick={() => openLightbox(index + 4)}
+                      style={{ height: '300px' }}
+                    >
+                      <img 
+                        src={image.src} 
+                        alt={image.alt}
+                        loading="eager"
+                        className="portfolio-image"
+                      />
+                      <div className="portfolio-shimmer" />
+                      <div className="portfolio-overlay" />
+                    </motion.div>
+                  ))}
+                </div>
+                
+                {/* Row 4: 1 portrait photo */}
+                <motion.div
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ 
+                    duration: 0.6, 
+                    delay: 0.2 + (7 * 0.08),
+                    ease: [0.22, 1, 0.36, 1]
+                  }}
+                  className="portfolio-item mb-[10px]"
+                  onClick={() => openLightbox(7)}
+                  style={{ height: '400px', maxWidth: '600px', margin: '0 auto' }}
+                >
+                  <img 
+                    src={portfolioImages[7].src} 
+                    alt={portfolioImages[7].alt}
+                    loading="eager"
+                    className="portfolio-image"
+                  />
+                  <div className="portfolio-shimmer" />
+                  <div className="portfolio-overlay" />
+                </motion.div>
               </div>
+              
+              {/* Instagram Button */}
               <motion.a
-                href="https://instagram.com/harsh_phalke_films"
+                href="https://www.instagram.com/HARSH_PHALKE_FILMS"
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.02 }}
-                className="block text-center py-3 bg-[#C9A84C] text-[#0A0A0A] rounded-lg font-bold"
+                className="portfolio-instagram-btn flex items-center justify-center gap-3 py-4 bg-[#C9A84C] text-[#0A0A0A] rounded-lg font-bold transition-all hover:bg-[#d4af37]"
               >
+                <Instagram className="w-5 h-5" />
                 View Full Portfolio on Instagram
               </motion.a>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Lightbox Fullscreen Viewer */}
+      <AnimatePresence>
+        {lightboxOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="lightbox-overlay"
+            onClick={closeLightbox}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Photo viewer"
+          >
+            {/* Close Button */}
+            <button
+              onClick={closeLightbox}
+              className="lightbox-close"
+              aria-label="Close lightbox"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            
+            {/* Photo Container */}
+            <motion.div
+              key={currentPhotoIndex}
+              initial={{ scale: 0.88, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              transition={{ duration: 0.45, ease: [0.34, 1.56, 0.64, 1] }}
+              className="lightbox-content"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={portfolioImages[currentPhotoIndex].src}
+                alt={portfolioImages[currentPhotoIndex].alt}
+                className="lightbox-image"
+              />
+              
+              {/* Caption */}
+              <p className="lightbox-caption">
+                {portfolioImages[currentPhotoIndex].caption}
+              </p>
+            </motion.div>
+            
+            {/* Navigation Arrows */}
+            <button
+              onClick={(e) => { e.stopPropagation(); prevPhoto(); }}
+              className="lightbox-arrow lightbox-arrow-left"
+              aria-label="Previous photo"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            
+            <button
+              onClick={(e) => { e.stopPropagation(); nextPhoto(); }}
+              className="lightbox-arrow lightbox-arrow-right"
+              aria-label="Next photo"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+            
+            {/* Photo Counter */}
+            <div className="lightbox-counter">
+              {currentPhotoIndex + 1} / {portfolioImages.length}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1568,5 +1933,6 @@ ${selectedServicesList.map(service => `• ${service}`).join('\n')}
         </div>
       </footer>
     </div>
+    </>
   );
 }
