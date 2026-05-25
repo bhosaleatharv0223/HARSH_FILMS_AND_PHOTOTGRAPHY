@@ -629,40 +629,43 @@ ${selectedServicesList.map(service => `${service}`).join('\n')}
         year: 'numeric'
       });
 
-      const whatsappMessage = `*HARSH PHALKE FILMS & PHOTOGRAPHY*
-_Premium Photography & Cinematography_
-_Pune, Maharashtra_
+      const whatsappMessage = `🎬 *HARSH PHALKE FILMS & PHOTOGRAPHY*
+✨ _Premium Photography & Cinematography_
+📍 _Pune, Maharashtra_
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━
-*NEW BOOKING REQUEST*
-_Date: ${bookingDate}_
-_Ref: HP-${year}-${refNumber}_
+🔔 *NEW BOOKING REQUEST*
+🗓️ _Date: ${bookingDate}_
+🆔 _Ref: HP-${year}-${refNumber}_
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━
-*CLIENT DETAILS*
-*Name*    ->  ${formData.fullName}
-*Phone*   ->  +91 ${formData.phone}
-*Date*    ->  ${formData.eventDate}
-*Venue*   ->  ${formData.location}
-*Amount*  ->  Rs.${calculateTotal().toLocaleString()}
-*Notes*   ->  ${formData.message?.trim() || 'No special requests'}
+👤 *CLIENT DETAILS*
+🙍 *Name*    →  ${formData.fullName}
+📞 *Phone*   →  +91 ${formData.phone}
+🎊 *Event*   →  ${formData.eventType}
+📅 *Date*    →  ${formData.eventDate}
+📍 *Venue*   →  ${formData.location}
+💰 *Amount*  →  ₹${calculateTotal().toLocaleString()}
+*Notes*   →  ${formData.message?.trim() || 'No special requests'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━
-*ATTACHMENTS*
-*Invoice:*
+📎 *ATTACHMENTS*
+🧾 *Invoice:*
 ${billUrl}
-*Payment Screenshot:*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+💳 *Payment Screenshot:*
 ${paymentScreenshotUrl}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━
-*ACTION REQUIRED*
-1. Review booking details
-2. Reply to client to confirm booking
+✅ *ACTION REQUIRED*
+1️⃣  Review booking details
+2️⃣  Reply to client to confirm booking
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━
-_Harsh Phalke Films & Photography_
-_harshphalkefilms.com_
-_Automated Booking System_`;
+💼 _Harsh Phalke Films & Photography_
+🌐 _harshphalkefilms.com_
+⚡ _Automated Booking System_`;
 
       const encoded = encodeURIComponent(whatsappMessage);
       window.open(`https://wa.me/917720049725?text=${encoded}`, '_blank');
